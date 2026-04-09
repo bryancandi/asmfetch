@@ -17,18 +17,9 @@
 !*.bat
 !*.c
 !*.cpp
-!*.css
-!*.db
-!*.h
-!*.html
-!*.java
-!*.js
+!*.jpg
 !*.md
-!*.py
-!*.R
-!*.s
-!*.sql
-!*.ts
+!*.png
 !*.txt
 !Makefile
 
