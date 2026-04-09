@@ -18,8 +18,10 @@
 !*.c
 !*.cpp
 !*.jpg
+!*.jpeg
 !*.md
 !*.png
+!*.svg
 !*.txt
 !Makefile
 
