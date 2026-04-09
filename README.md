@@ -1,4 +1,4 @@
-![asmfetch logo](./img/asmfetch_00a2ed.png)
+![asmfetch logo](./img/asmfetch_0080ff.png)
 ***
 ### Windows x64 system information utility written in x64 assembly (MASM).
 
