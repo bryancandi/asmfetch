@@ -1,8 +1,9 @@
 ![asmfetch logo](./img/asmfetch_0080ff.png)
-***
-### Windows x64 system information utility written in x64 assembly (MASM).
+### Windows command-line system information utility written in x64 assembly (MASM).
 
-Sample output (may not show all current features):
+***
+
+Example output (may not include all current features):
 
 ```text
 --- Operating System ---
