@@ -1,6 +1,5 @@
 ;==============================================================================
 ; asmfetch: x64 System Information utility for Windows console.
-; GitHub: https://github.com/bryancandi/asmfetch
 ; Author: Bryan C.
 ; Date  : 2026
 ;
@@ -103,12 +102,9 @@ os_title        BYTE    "--- Operating System ---", 0Dh, 0Ah
 os_version      BYTE    "Version      : "
 os_edition      BYTE    "Edition      : "
 os_build        BYTE    "Build        : "
-w11_26H1        BYTE    "Windows 11 (26H1)"
-w11_25H2        BYTE    "Windows 11 (25H2)"
-w11_24H2        BYTE    "Windows 11 (24H2)"
-w11_23H2        BYTE    "Windows 11 (23H2)"
-w11_22H2        BYTE    "Windows 11 (22H2)"
-w11_21H2        BYTE    "Windows 11 (21H2)"
+win_11          BYTE    "Windows 11+"
+win_10          BYTE    "Windows 10"
+win_legacy      BYTE    "Windows (pre-10)"
 ed_home         BYTE    "Home"
 ed_home_sl      BYTE    "Home Single Language"
 ed_home_n       BYTE    "Home N"
@@ -253,53 +249,30 @@ GetWinVer PROC
         call    RtlGetVersion
 
         test    EAX, EAX                    ; 0 = success; nz = failure
-        jz      rtl_success
+        jz      winver_continue
         lea     RAX, unknown
         mov     R8D, LENGTHOF unknown
-        jmp     winver_done
+        ret
 
-rtl_success:
+winver_continue:
         mov     EAX, osEx.dwBuildNumber
-        cmp     EAX, 28000
-        jae     win11_26H1
-        cmp     EAX, 26200
-        jae     win11_25H2
-        cmp     EAX, 26100
-        jae     win11_24H2
-        cmp     EAX, 22631
-        jae     win11_23H2
-        cmp     EAX, 22621
-        jae     win11_22H2
-        cmp     EAX, 22000
-        jae     win11_21H2
+        cmp     EAX, 22000                  ; Is Windows 11 or newer?
+        jae     is_win11                    ; Yes.
+        cmp     EAX, 10240                  ; Is Windows 10?
+        jae     is_win10                    ; Yes.
+        jmp     is_legacy                   ; No.
 
-        jmp     winver_done                 ; Prevent fall-through; this should not be reached.
-
-win11_26H1:
-        lea     RAX, w11_26H1
-        mov     R8D, LENGTHOF w11_26H1
-        jmp     winver_done
-win11_25H2:
-        lea     RAX, w11_25H2
-        mov     R8D, LENGTHOF w11_25H2
-        jmp     winver_done
-win11_24H2:
-        lea     RAX, w11_24H2
-        mov     R8D, LENGTHOF w11_24H2
-        jmp     winver_done
-win11_23H2:
-        lea     RAX, w11_23H2
-        mov     R8D, LENGTHOF w11_23H2
-        jmp     winver_done
-win11_22H2:
-        lea     RAX, w11_22H2
-        mov     R8D, LENGTHOF w11_22H2
-        jmp     winver_done
-win11_21H2:
-        lea     RAX, w11_21H2
-        mov     R8D, LENGTHOF w11_21H2
-        jmp     winver_done
-winver_done:
+is_win11:
+        lea     RAX, win_11
+        mov     R8D, LENGTHOF win_11
+        ret
+is_win10:
+        lea     RAX, win_10
+        mov     R8D, LENGTHOF win_10
+        ret
+is_legacy:
+        lea     RAX, win_legacy
+        mov     R8D, LENGTHOF win_legacy
         ret
 GetWinVer ENDP
 
@@ -345,56 +318,65 @@ GetWinEdition PROC
 w_home:
         lea     RAX, ed_home
         mov     R8D, LENGTHOF ed_home
-        jmp     edition_done
+        ret
 w_home_sl:
         lea     RAX, ed_home_sl
         mov     R8D, LENGTHOF ed_home_sl
-        jmp     edition_done
+        ret
 w_home_n:
         lea     RAX, ed_home_n
         mov     R8D, LENGTHOF ed_home_n
-        jmp     edition_done
+        ret
 w_pro:
         lea     RAX, ed_pro
         mov     R8D, LENGTHOF ed_pro
-        jmp     edition_done
+        ret
 w_pro_n:
         lea     RAX, ed_pro_n
         mov     R8D, LENGTHOF ed_pro_n
-        jmp     edition_done
+        ret
 w_pro_edu:
         lea     RAX, ed_pro_edu
         mov     R8D, LENGTHOF ed_pro_edu
-        jmp     edition_done
+        ret
 w_pro_ws:
         lea     RAX, ed_pro_ws
         mov     R8D, LENGTHOF ed_pro_ws
-        jmp     edition_done
+        ret
 w_edu:
         lea     RAX, ed_edu
         mov     R8D, LENGTHOF ed_edu
-        jmp     edition_done
+        ret
 w_ent:
         lea     RAX, ed_ent
         mov     R8D, LENGTHOF ed_ent
-        jmp     edition_done
+        ret
 w_ent_e:
         lea     RAX, ed_ent_e
         mov     R8D, LENGTHOF ed_ent_e
-        jmp     edition_done
+        ret
 w_ent_n:
         lea     RAX, ed_ent_n
         mov     R8D, LENGTHOF ed_ent_n
-        jmp     edition_done
+        ret
 w_unknown:
         lea     RAX, unknown
         mov     R8D, LENGTHOF unknown
-edition_done:
         ret
 GetWinEdition ENDP
 
 ; Return Windows build number in EAX.
 GetWinBuild PROC
+        mov     osEx.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOEXW
+        lea     RCX, osEx
+        call    RtlGetVersion
+
+        test    EAX, EAX                    ; 0 = success; nz = failure
+        jz      build_continue
+        xor     EAX, EAX                    ; Return build number: 0
+        ret
+
+build_continue:
         mov     EAX, osEx.dwBuildNumber
         ret
 GetWinBuild ENDP
@@ -517,28 +499,26 @@ GetCpuArch PROC
 
         lea     RAX, cpu_unknown
         mov     R8D, LENGTHOF cpu_unknown
-        jmp     arch_done
+        ret
 is_x86:
         lea     RAX, cpu_x86
         mov     R8D, LENGTHOF cpu_x86
-        jmp     arch_done
+        ret
 is_x64:
         lea     RAX, cpu_x64
         mov     R8D, LENGTHOF cpu_x64
-        jmp     arch_done
+        ret
 is_arm:
         lea     RAX, cpu_arm
         mov     R8D, LENGTHOF cpu_arm
-        jmp     arch_done
+        ret
 is_arm64:
         lea     RAX, cpu_arm64
         mov     R8D, LENGTHOF cpu_arm64
-        jmp     arch_done
+        ret
 is_ia64:
         lea     RAX, cpu_ia64
         mov     R8D, LENGTHOF cpu_ia64
-        jmp     arch_done
-arch_done:
         ret
 GetCpuArch ENDP
 
