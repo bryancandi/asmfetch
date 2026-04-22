@@ -33,7 +33,7 @@ SecPerMinute      EQU   60
 
 ; Macro: write a string to the console. addr may be RAX or a label; len is copied into R8D.
 StrOut  MACRO   addr, len
-        mov     RCX, stdout                 ; Arg 1: output device handle.
+        mov     RCX, [stdout]               ; Arg 1: output device handle.
 IFIDNI  <addr>, <RAX>                       ; If addr is RAX, use it directly; otherwise LEA of the label.
         mov     RDX, RAX                    ; Arg 2: pointer to byte array in RAX register.
 ELSE
@@ -157,7 +157,6 @@ second_label    BYTE    " second"
 ; Formatting and utility:
 unknown         BYTE    "unknown"
 newln           BYTE    0Dh, 0Ah            ; CRLF
-stdin           QWORD   ?                   ; Handle to standard input device.
 stdout          QWORD   ?                   ; Handle to standard output device.
 nbwr            DWORD   ?                   ; Number of bytes (characters) actually written.
 nbrd            DWORD   ?                   ; Number of bytes (characters) actually read.
@@ -687,7 +686,7 @@ main    PROC
         ; Obtain handle for standard output.
         mov     RCX, STD_OUTPUT_HANDLE      ; Standard output device code for GetStdHandle.
         call    GetStdHandle                ; Return handle to standard output.
-        mov     stdout, RAX                 ; Store the handle for console output.
+        mov     [stdout], RAX               ; Store the handle for console output.
 
 ;       Operating system section:
         StrOut  newln, LENGTHOF newln
