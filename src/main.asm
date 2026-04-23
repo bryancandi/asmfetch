@@ -169,7 +169,7 @@ Int2Str PROC
         mov     rbx, 10                     ; Divisor (10)
         xor     r8d, r8d                    ; Initial string length = 0
 
-convert_loop:
+@loop:
         xor     rdx, rdx                    ; Clear RDX for division.
         div     rbx                         ; RAX = quotient, RDX = remainder.
         add     dl, '0'                     ; Remainder to ASCII digit.
@@ -177,7 +177,7 @@ convert_loop:
         mov     [rdi], dl                   ; Store digit.
         inc     r8d                         ; Length + 1
         test    rax, rax
-        jnz     convert_loop
+        jnz     @loop
 
         mov     rax, rdi                    ; Return pointer to first digit.
 
@@ -248,12 +248,12 @@ GetWinVer PROC
         call    RtlGetVersion
 
         test    eax, eax                    ; 0 = success; nz = failure
-        jz      winver_continue
+        jz      @continue
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
         ret
 
-winver_continue:
+@continue:
         mov     eax, osEx.dwBuildNumber
         cmp     eax, 22000                  ; Is Windows 11 or newer?
         jae     is_win11                    ; Yes.
@@ -371,11 +371,11 @@ GetWinBuild PROC
         call    RtlGetVersion
 
         test    eax, eax                    ; 0 = success; nz = failure
-        jz      build_continue
+        jz      @continue
         xor     eax, eax                    ; Return build number: 0
         ret
 
-build_continue:
+@continue:
         mov     eax, osEx.dwBuildNumber
         ret
 GetWinBuild ENDP
@@ -389,15 +389,14 @@ GetComputerNameStr PROC
         call    GetComputerNameA
 
         test    eax, eax                    ; nz = success; 0 = failure
-        jz      cname_fail
-
-        lea     rax, compNameBuf
-        mov     r8d, compNameSize
-        ret
-
-cname_fail:
+        jnz     @continue
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
+        ret
+
+@continue:
+        lea     rax, compNameBuf
+        mov     r8d, compNameSize
         ret
 GetComputerNameStr ENDP
 
@@ -528,14 +527,13 @@ GetMemTotal PROC
         call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
 
         test    rax, rax                    ; nz = success; 0 = failure
-        jz      mem_fail
-
-        mov     rax, msEx.ullTotalPhys      ; Load QWORD from struct.
-        ret
-
-mem_fail:
+        jnz     @continue
         xor     rax, rax                    ; Fail = return zeros.
         xor     r10, r10
+        ret
+
+@continue:
+        mov     rax, msEx.ullTotalPhys      ; Load QWORD from struct.
         ret
 GetMemTotal ENDP
 
@@ -546,14 +544,13 @@ GetMemAvail PROC
         call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
 
         test    rax, rax                    ; nz = success; 0 = failure
-        jz      mem_fail
-
-        mov     rax, msEx.ullAvailPhys      ; Load QWORD from struct.
-        ret
-
-mem_fail:
+        jnz     @continue
         xor     rax, rax                    ; Fail = return zeros.
         xor     r10, r10
+        ret
+
+@continue:
+        mov     rax, msEx.ullAvailPhys      ; Load QWORD from struct.
         ret
 GetMemAvail ENDP
 
