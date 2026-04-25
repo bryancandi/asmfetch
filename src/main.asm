@@ -248,12 +248,8 @@ GetWinVer PROC
         call    RtlGetVersion
 
         test    eax, eax                    ; 0 = success; nz = failure
-        jz      @continue
-        lea     rax, unknown
-        mov     r8d, LENGTHOF unknown
-        ret
+        jnz     @fail
 
-@continue:
         mov     eax, osEx.dwBuildNumber
         cmp     eax, 22000                  ; Is Windows 11 or newer?
         jae     is_win11                    ; Yes.
@@ -272,6 +268,11 @@ is_win10:
 is_legacy:
         lea     rax, win_legacy
         mov     r8d, LENGTHOF win_legacy
+        ret
+
+@fail:
+        lea     rax, unknown
+        mov     r8d, LENGTHOF unknown
         ret
 GetWinVer ENDP
 
@@ -371,12 +372,13 @@ GetWinBuild PROC
         call    RtlGetVersion
 
         test    eax, eax                    ; 0 = success; nz = failure
-        jz      @continue
-        xor     eax, eax                    ; Return build number: 0
+        jnz     @fail
+
+        mov     eax, osEx.dwBuildNumber
         ret
 
-@continue:
-        mov     eax, osEx.dwBuildNumber
+@fail:
+        xor     eax, eax                    ; Return build number: 0
         ret
 GetWinBuild ENDP
 
@@ -389,14 +391,15 @@ GetComputerNameStr PROC
         call    GetComputerNameA
 
         test    eax, eax                    ; nz = success; 0 = failure
-        jnz     @continue
-        lea     rax, unknown
-        mov     r8d, LENGTHOF unknown
-        ret
+        jz      @fail
 
-@continue:
         lea     rax, compNameBuf
         mov     r8d, compNameSize
+        ret
+
+@fail:
+        lea     rax, unknown
+        mov     r8d, LENGTHOF unknown
         ret
 GetComputerNameStr ENDP
 
@@ -527,13 +530,14 @@ GetMemTotal PROC
         call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
 
         test    rax, rax                    ; nz = success; 0 = failure
-        jnz     @continue
-        xor     rax, rax                    ; Fail = return zeros.
-        xor     r10, r10
+        jz      @fail
+
+        mov     rax, msEx.ullTotalPhys      ; Load QWORD from struct.
         ret
 
-@continue:
-        mov     rax, msEx.ullTotalPhys      ; Load QWORD from struct.
+@fail:
+        xor     rax, rax                    ; Fail = return zeros.
+        xor     r10, r10
         ret
 GetMemTotal ENDP
 
@@ -544,13 +548,14 @@ GetMemAvail PROC
         call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
 
         test    rax, rax                    ; nz = success; 0 = failure
-        jnz     @continue
-        xor     rax, rax                    ; Fail = return zeros.
-        xor     r10, r10
+        jz      @fail
+
+        mov     rax, msEx.ullAvailPhys      ; Load QWORD from struct.
         ret
 
-@continue:
-        mov     rax, msEx.ullAvailPhys      ; Load QWORD from struct.
+@fail:
+        xor     rax, rax                    ; Fail = return zeros.
+        xor     r10, r10
         ret
 GetMemAvail ENDP
 
