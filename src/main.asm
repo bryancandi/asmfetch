@@ -102,7 +102,7 @@ os_title        BYTE    "--- Operating System ---", 0Dh, 0Ah
 os_version      BYTE    "Version      : "
 os_edition      BYTE    "Edition      : "
 os_build        BYTE    "Build        : "
-win_11          BYTE    "Windows 11+"
+win_11          BYTE    "Windows 11"
 win_10          BYTE    "Windows 10"
 win_legacy      BYTE    "Windows (pre-10)"
 ed_home         BYTE    "Home"
@@ -135,10 +135,12 @@ cpu_unknown     BYTE    "Architecture : Unknown"
 mem_title       BYTE    "--- Memory ---", 0Dh, 0Ah
 mem_total       BYTE    "RAM Total    : "
 mem_avail       BYTE    "RAM Free     : "
+mem_load        BYTE    "Memory Load  : "
 gibi_whole      QWORD   ?                   ; Store whole portion of RAM size.
 gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size.
 gib_label       BYTE    " GiB"
 decimal_pt      BYTE    "."
+percent_sn      BYTE    "%"
 ; Uptime strings:
 uptime_title    BYTE    "--- System Uptime ---", 0Dh, 0Ah
 comma_sp        BYTE    ", "
@@ -523,8 +525,10 @@ is_ia64:
         ret
 GetCpuArch ENDP
 
-; Return total memory in bytes as integer in RAX.
-GetMemTotal PROC
+; Returns: RAX = size of total physical memory in bytes (QWORD).
+;          RDX = size of available physical memory in bytes (QWORD).
+;          R8D = memory load percentage (DWORD).
+GetMemory PROC
         mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
         lea     rcx, msEx
         call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
@@ -532,32 +536,17 @@ GetMemTotal PROC
         test    rax, rax                    ; nz = success; 0 = failure
         jz      @fail
 
-        mov     rax, msEx.ullTotalPhys      ; Load QWORD from struct.
+        mov     rax, msEx.ullTotalPhys      ; Load QWORD from struct (total RAM).
+        mov     rdx, msEx.ullAvailPhys      ; Load QWORD from struct (available RAM).
+        mov     r8d, msEx.dwMemoryLoad      ; Load DWORD from struct (memory load percentage).
         ret
 
 @fail:
         xor     rax, rax                    ; Fail = return zeros.
-        xor     r10, r10
+        xor     rdx, rdx
+        xor     r8, r8
         ret
-GetMemTotal ENDP
-
-; Return free memory in bytes as integer in RAX.
-GetMemAvail PROC
-        mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
-        lea     rcx, msEx
-        call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
-
-        test    rax, rax                    ; nz = success; 0 = failure
-        jz      @fail
-
-        mov     rax, msEx.ullAvailPhys      ; Load QWORD from struct.
-        ret
-
-@fail:
-        xor     rax, rax                    ; Fail = return zeros.
-        xor     r10, r10
-        ret
-GetMemAvail ENDP
+GetMemory ENDP
 
 ; Print a formatted uptime string directly to the console when called.
 PrintFormatUptime PROC
@@ -746,7 +735,9 @@ main    PROC
         StrOut  mem_title, LENGTHOF mem_title
 
         StrOut  mem_total, LENGTHOF mem_total
-        call    GetMemTotal
+        call    GetMemory
+        mov     r12, rdx                    ; Save free memory QWORD for later use.
+        mov     r13d, r8d                   ; Save memory load DWORD for later use.
         call    Byte2GiB
         mov     rax, [gibi_whole]
         lea     rdi, membuf + MaxBuf
@@ -761,7 +752,7 @@ main    PROC
         StrOut  newln, LENGTHOF newln
 
         StrOut  mem_avail, LENGTHOF mem_avail
-        call    GetMemAvail
+        mov     rax, r12                    ; Load free memory QWORD.
         call    Byte2GiB
         mov     rax, [gibi_whole]
         lea     rdi, membuf + MaxBuf
@@ -773,6 +764,13 @@ main    PROC
         call    Int2Str
         StrOut  rax, r8d
         StrOut  gib_label, LENGTHOF gib_label
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  mem_load, LENGTHOF mem_load
+        mov     eax, r13d                   ; Load memory load DWORD.
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  percent_sn, LENGTHOF percent_sn
         StrOut  newln, LENGTHOF newln
 
 ;       Uptime section:
