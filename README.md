@@ -7,7 +7,7 @@ Example output (may not include all current features):
 
 ```text
 --- Operating System ---
-Version      : Windows 11 (25H2)
+Version      : Windows 11
 Edition      : Pro
 Build        : 26200
 Host         : THINKPAD-T490S
@@ -20,7 +20,8 @@ Architecture : x64 (AMD64)
 
 --- Memory ---
 RAM Total    : 15.75 GiB
-RAM Free     : 5.50 GiB
+RAM Free     : 8.4 GiB
+Memory Load  : 48%
 
 --- System Uptime ---
 7 days, 1 hour, 12 minutes, 36 seconds
