@@ -121,12 +121,12 @@ header_sw       BYTE    " Software Information", 0Dh, 0Ah
 cpu_vendor      BYTE    "CPU Vendor   : "
 cpu_name        BYTE    "CPU Model    : "
 cpu_cores       BYTE    "CPU Cores    : "
-cpu_x86         BYTE    "CPU Arch     : x86"
-cpu_x64         BYTE    "CPU Arch     : x64 (AMD64)"
-cpu_arm         BYTE    "CPU Arch     : ARM"
-cpu_arm64       BYTE    "CPU Arch     : ARM64"
-cpu_ia64        BYTE    "CPU Arch     : Intel Itanium"
-cpu_unknown     BYTE    "CPU Arch     : Unknown"
+cpu_arch        BYTE    "CPU Arch     : "
+cpu_x86         BYTE    "x86"
+cpu_x64         BYTE    "x64 (AMD64)"
+cpu_arm         BYTE    "ARM"
+cpu_arm64       BYTE    "ARM64"
+cpu_ia64        BYTE    "Intel Itanium"
 ; Memory strings:
 mem_total       BYTE    "RAM Total    : "
 mem_avail       BYTE    "RAM Free     : "
@@ -574,8 +574,8 @@ GetCpuArch PROC
         cmp     eax, 6                      ; 6 = IA64
         je      is_ia64
 
-        lea     rax, cpu_unknown
-        mov     r8d, LENGTHOF cpu_unknown
+        lea     rax, unknown
+        mov     r8d, LENGTHOF unknown
         ret
 is_x86:
         lea     rax, cpu_x86
@@ -741,6 +741,7 @@ main    PROC
         StrOut  rax, r8d
         StrOut  newln, LENGTHOF newln
 
+        StrOut  cpu_arch, LENGTHOF cpu_arch
         call    GetCpuArch
         StrOut  rax, r8d
         StrOut  newln, LENGTHOF newln
