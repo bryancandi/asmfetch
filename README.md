@@ -7,7 +7,7 @@ Example output (may not include all current features):
 
 ```text
 ==============================
- Hardware Information
+           Hardware
 ==============================
 CPU Vendor   : GenuineIntel
 CPU Model    : Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz
@@ -18,7 +18,7 @@ RAM Free     : 7.67 GiB
 RAM Load     : 51%
 
 ==============================
- Software Information
+           Software
 ==============================
 OS Version   : Windows 11
 OS Edition   : Pro
