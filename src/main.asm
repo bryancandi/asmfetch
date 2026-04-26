@@ -10,6 +10,10 @@
 ; link.exe /OUT:build\asmfetch.exe build\*.obj /SUBSYSTEM:console /ENTRY:main
 ;==============================================================================
 
+;==============================================================================
+; Libraries and Prototypes
+;==============================================================================
+
 INCLUDELIB kernel32.lib                     ; Win32 API functions.
 INCLUDELIB ntdll.lib                        ; NT native system calls.
 
@@ -23,6 +27,10 @@ GetProductInfo          PROTO :DWORD, :DWORD, :DWORD, :DWORD, :PTR DWORD
 GetNativeSystemInfo     PROTO :PTR SYSTEM_INFO
 GetComputerNameA        PROTO :PTR BYTE, :PTR DWORD
 
+;==============================================================================
+; Constants
+;==============================================================================
+
 STD_OUTPUT_HANDLE EQU   -11                 ; Device code for console output.
 MaxBuf            EQU   256
 BytesPerGib       EQU   1024 * 1024 * 1024
@@ -30,6 +38,10 @@ MsPerSecond       EQU   1000
 SecPerDay         EQU   86400
 SecPerHour        EQU   3600
 SecPerMinute      EQU   60
+
+;==============================================================================
+; Macros
+;==============================================================================
 
 ; Macro: write a string to the console. addr may be RAX or a label; len is copied into R8D.
 StrOut  MACRO   addr, len
@@ -43,6 +55,10 @@ ENDIF
         lea     r9, nbwr                    ; Arg 4: pointer to variable that receives number of bytes written.
         call    WriteConsoleA
         ENDM
+
+;==============================================================================
+; Structure Definitions (Win32/NT)
+;==============================================================================
 
 ; Structure used by GetNativeSystemInfo.
 SYSTEM_INFO STRUCT
@@ -97,11 +113,33 @@ tmpbuf          DWORD   MaxBuf DUP (?)      ; Temp buffer for Int2Str or general
 cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer.
 membuf          DWORD   MaxBuf DUP (?)      ; Memory data buffer.
 timebuf         DWORD   MaxBuf DUP (?)      ; Uptime string buffer.
+; Header strings:
+header_line     BYTE    "==============================", 0Dh, 0Ah
+header_hw       BYTE    " Hardware Information", 0Dh, 0Ah
+header_sw       BYTE    " Software Information", 0Dh, 0Ah
+; Processor strings:
+cpu_vendor      BYTE    "CPU Vendor   : "
+cpu_name        BYTE    "CPU Model    : "
+cpu_cores       BYTE    "CPU Cores    : "
+cpu_x86         BYTE    "CPU Arch     : x86"
+cpu_x64         BYTE    "CPU Arch     : x64 (AMD64)"
+cpu_arm         BYTE    "CPU Arch     : ARM"
+cpu_arm64       BYTE    "CPU Arch     : ARM64"
+cpu_ia64        BYTE    "CPU Arch     : Intel Itanium"
+cpu_unknown     BYTE    "CPU Arch     : Unknown"
+; Memory strings:
+mem_total       BYTE    "RAM Total    : "
+mem_avail       BYTE    "RAM Free     : "
+mem_load        BYTE    "RAM Load     : "
+gibi_whole      QWORD   ?                   ; Store whole portion of RAM size.
+gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size.
+gib_label       BYTE    " GiB"
+decimal_pt      BYTE    "."
+percent_sn      BYTE    "%"
 ; Operating system strings:
-os_title        BYTE    "--- Operating System ---", 0Dh, 0Ah
-os_version      BYTE    "Version      : "
-os_edition      BYTE    "Edition      : "
-os_build        BYTE    "Build        : "
+os_version      BYTE    "OS Version   : "
+os_edition      BYTE    "OS Edition   : "
+os_build        BYTE    "OS Build     : "
 win_11          BYTE    "Windows 11"
 win_10          BYTE    "Windows 10"
 win_legacy      BYTE    "Windows (pre-10)"
@@ -120,29 +158,8 @@ productType     DWORD   ?                   ; Store return value from GetProduct
 comp_name       BYTE    "Host         : "
 compNameBuf     BYTE    MaxBuf DUP (0)
 compNameSize    DWORD   MaxBuf
-; Processor strings:
-cpu_title       BYTE    "--- Processor ---", 0Dh, 0Ah
-cpu_vendor      BYTE    "Vendor       : "
-cpu_name        BYTE    "Model        : "
-cpu_cores       BYTE    "Cores        : "
-cpu_x86         BYTE    "Architecture : x86"
-cpu_x64         BYTE    "Architecture : x64 (AMD64)"
-cpu_arm         BYTE    "Architecture : ARM"
-cpu_arm64       BYTE    "Architecture : ARM64"
-cpu_ia64        BYTE    "Architecture : Intel Itanium"
-cpu_unknown     BYTE    "Architecture : Unknown"
-; Memory strings:
-mem_title       BYTE    "--- Memory ---", 0Dh, 0Ah
-mem_total       BYTE    "RAM Total    : "
-mem_avail       BYTE    "RAM Free     : "
-mem_load        BYTE    "Memory Load  : "
-gibi_whole      QWORD   ?                   ; Store whole portion of RAM size.
-gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size.
-gib_label       BYTE    " GiB"
-decimal_pt      BYTE    "."
-percent_sn      BYTE    "%"
 ; Uptime strings:
-uptime_title    BYTE    "--- System Uptime ---", 0Dh, 0Ah
+uptime          BYTE    "Uptime       : "
 comma_sp        BYTE    ", "
 days            QWORD   ?                   ; Uptime days value.
 days_label      BYTE    " days"
@@ -164,6 +181,10 @@ nbwr            DWORD   ?                   ; Number of bytes (characters) actua
 nbrd            DWORD   ?                   ; Number of bytes (characters) actually read.
 
         .CODE
+;==============================================================================
+; Utility functions
+;==============================================================================
+
 ; Convert integer in RAX to ASCII string in buffer pointed to by RDI; digits are stored in reverse order.
 Int2Str PROC
         push    rbx                         ; Preserve RBX register.
@@ -242,6 +263,10 @@ ConvertToDHMS PROC
 
         ret
 ConvertToDHMS ENDP
+
+;==============================================================================
+; Operating System related functions
+;==============================================================================
 
 ; Return pointer to Windows version string in RAX; byte length in R8D.
 GetWinVer PROC
@@ -405,149 +430,6 @@ GetComputerNameStr PROC
         ret
 GetComputerNameStr ENDP
 
-; Get CPU vendor string and store it in a buffer.
-GetCpuVend PROC
-        push    rbx
-
-        mov     eax, 0                      ; CPUID leaf 0 = vendor.
-        cpuid                               ; CPUID instruction.
-        mov     [cpubuf], ebx
-        mov     [cpubuf + 4], edx
-        mov     [cpubuf + 8], ecx
-
-        lea     rax, cpubuf                 ; RAX: point to buffer address.
-        mov     r8d, 12                     ; Return length in R8D.
-
-        pop     rbx
-        ret
-GetCpuVend ENDP
-
-; Get CPU brand string and store it in a buffer.
-GetCpuBrand PROC
-        push    rbx
-
-        mov     eax, 80000002h              ; 80000002h - 80000004h = processor brand string.
-        cpuid
-        mov     [cpubuf], eax
-        mov     [cpubuf + 4], ebx
-        mov     [cpubuf + 8], ecx
-        mov     [cpubuf + 12], edx
-
-        mov     eax, 80000003h
-        cpuid
-        mov     [cpubuf + 16], eax
-        mov     [cpubuf + 20], ebx
-        mov     [cpubuf + 24], ecx
-        mov     [cpubuf + 28], edx
-
-        mov     eax, 80000004h
-        cpuid
-        mov     [cpubuf + 32], eax
-        mov     [cpubuf + 36], ebx
-        mov     [cpubuf + 40], ecx
-        mov     [cpubuf + 44], edx
-
-        lea     rax, cpubuf                 ; RAX: point to buffer address.
-        mov     r8d, 48                     ; Return length in R8D.
-
-        pop     rbx
-        ret
-GetCpuBrand ENDP
-
-; Return CPU core count as an integer in EAX.
-GetCpuCores PROC
-        push    rbx
-
-        mov     eax, 0                      ; Load vendor string.
-        cpuid
-        cmp     ebx, 'Auth'                 ; Check for the first part of "AuthenticAMD" in vendor string.
-        je      amd_proc
-
-        ; Intel processor
-        mov     eax, 4
-        xor     ecx, ecx                    ; Sub-leaf: 0
-        cpuid
-        shr     eax, 26                     ; Shift bits 31:26 to bottom
-        inc     eax                         ; Core count in EAX.
-        jmp     cores_done
-
-        ; AMD Processor
-amd_proc:
-        mov     eax, 80000008h
-        cpuid
-        and     ecx, 0FFh                   ; Mask bits 7:0
-        inc     ecx                         ; Core count in ECX.
-        mov     eax, ecx                    ; Normalize: core count in EAX.
-
-cores_done:
-        pop     rbx
-        ret
-GetCpuCores ENDP
-
-; Return pointer to CPU architecture string in RAX; byte length in R8D.
-GetCpuArch PROC
-        lea     rcx, sysInf
-        call    GetNativeSystemInfo
-        movzx   eax, sysInf.wProcessorArchitecture
-        cmp     eax, 0                      ; 0 = x86
-        je      is_x86
-        cmp     eax, 9                      ; 9 = x64
-        je      is_x64
-        cmp     eax, 5                      ; 5 = ARM
-        je      is_arm
-        cmp     eax, 12                     ; 12 = ARM64
-        je      is_arm64
-        cmp     eax, 6                      ; 6 = IA64
-        je      is_ia64
-
-        lea     rax, cpu_unknown
-        mov     r8d, LENGTHOF cpu_unknown
-        ret
-is_x86:
-        lea     rax, cpu_x86
-        mov     r8d, LENGTHOF cpu_x86
-        ret
-is_x64:
-        lea     rax, cpu_x64
-        mov     r8d, LENGTHOF cpu_x64
-        ret
-is_arm:
-        lea     rax, cpu_arm
-        mov     r8d, LENGTHOF cpu_arm
-        ret
-is_arm64:
-        lea     rax, cpu_arm64
-        mov     r8d, LENGTHOF cpu_arm64
-        ret
-is_ia64:
-        lea     rax, cpu_ia64
-        mov     r8d, LENGTHOF cpu_ia64
-        ret
-GetCpuArch ENDP
-
-; Returns: RAX = size of total physical memory in bytes (QWORD).
-;          RDX = size of available physical memory in bytes (QWORD).
-;          R8D = memory load percentage (DWORD).
-GetMemory PROC
-        mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
-        lea     rcx, msEx
-        call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
-
-        test    rax, rax                    ; nz = success; 0 = failure
-        jz      @fail
-
-        mov     rax, msEx.ullTotalPhys      ; Load QWORD from struct (total RAM).
-        mov     rdx, msEx.ullAvailPhys      ; Load QWORD from struct (available RAM).
-        mov     r8d, msEx.dwMemoryLoad      ; Load DWORD from struct (memory load percentage).
-        ret
-
-@fail:
-        xor     rax, rax                    ; Fail = return zeros.
-        xor     rdx, rdx
-        xor     r8, r8
-        ret
-GetMemory ENDP
-
 ; Print a formatted uptime string directly to the console when called.
 PrintFormatUptime PROC
         push    rdi
@@ -671,6 +553,162 @@ uptime_done:
         ret
 PrintFormatUptime ENDP
 
+;==============================================================================
+; Processor functions
+;==============================================================================
+
+; Returns: RAX = pointer to CPU architecture string in RAX.
+;          R8D = length of string in R8D.
+GetCpuArch PROC
+        lea     rcx, sysInf
+        call    GetNativeSystemInfo
+        movzx   eax, sysInf.wProcessorArchitecture
+        cmp     eax, 0                      ; 0 = x86
+        je      is_x86
+        cmp     eax, 9                      ; 9 = x64
+        je      is_x64
+        cmp     eax, 5                      ; 5 = ARM
+        je      is_arm
+        cmp     eax, 12                     ; 12 = ARM64
+        je      is_arm64
+        cmp     eax, 6                      ; 6 = IA64
+        je      is_ia64
+
+        lea     rax, cpu_unknown
+        mov     r8d, LENGTHOF cpu_unknown
+        ret
+is_x86:
+        lea     rax, cpu_x86
+        mov     r8d, LENGTHOF cpu_x86
+        ret
+is_x64:
+        lea     rax, cpu_x64
+        mov     r8d, LENGTHOF cpu_x64
+        ret
+is_arm:
+        lea     rax, cpu_arm
+        mov     r8d, LENGTHOF cpu_arm
+        ret
+is_arm64:
+        lea     rax, cpu_arm64
+        mov     r8d, LENGTHOF cpu_arm64
+        ret
+is_ia64:
+        lea     rax, cpu_ia64
+        mov     r8d, LENGTHOF cpu_ia64
+        ret
+GetCpuArch ENDP
+
+; Get CPU brand string and store it in 'cpubuf' buffer.
+GetCpuBrand PROC
+        push    rbx
+
+        mov     eax, 80000002h              ; 80000002h - 80000004h = processor brand string.
+        cpuid
+        mov     [cpubuf], eax
+        mov     [cpubuf + 4], ebx
+        mov     [cpubuf + 8], ecx
+        mov     [cpubuf + 12], edx
+
+        mov     eax, 80000003h
+        cpuid
+        mov     [cpubuf + 16], eax
+        mov     [cpubuf + 20], ebx
+        mov     [cpubuf + 24], ecx
+        mov     [cpubuf + 28], edx
+
+        mov     eax, 80000004h
+        cpuid
+        mov     [cpubuf + 32], eax
+        mov     [cpubuf + 36], ebx
+        mov     [cpubuf + 40], ecx
+        mov     [cpubuf + 44], edx
+
+        lea     rax, cpubuf                 ; RAX: point to buffer address.
+        mov     r8d, 48                     ; Return length in R8D.
+
+        pop     rbx
+        ret
+GetCpuBrand ENDP
+
+; Return CPU core count as an integer in EAX.
+GetCpuCores PROC
+        push    rbx
+
+        mov     eax, 0                      ; Load vendor string.
+        cpuid
+        cmp     ebx, 'Auth'                 ; Check for the first part of "AuthenticAMD" in vendor string.
+        je      amd_proc
+
+        ; Intel processor
+        mov     eax, 4
+        xor     ecx, ecx                    ; Sub-leaf: 0
+        cpuid
+        shr     eax, 26                     ; Shift bits 31:26 to bottom
+        inc     eax                         ; Core count in EAX.
+        jmp     cores_done
+
+        ; AMD Processor
+amd_proc:
+        mov     eax, 80000008h
+        cpuid
+        and     ecx, 0FFh                   ; Mask bits 7:0
+        inc     ecx                         ; Core count in ECX.
+        mov     eax, ecx                    ; Normalize: core count in EAX.
+
+cores_done:
+        pop     rbx
+        ret
+GetCpuCores ENDP
+
+; Get CPU vendor string and store it in 'cpubuf' buffer.
+GetCpuVend PROC
+        push    rbx
+
+        mov     eax, 0                      ; CPUID leaf 0 = vendor.
+        cpuid                               ; CPUID instruction.
+        mov     [cpubuf], ebx
+        mov     [cpubuf + 4], edx
+        mov     [cpubuf + 8], ecx
+
+        lea     rax, cpubuf                 ; RAX: point to buffer address.
+        mov     r8d, 12                     ; Return length in R8D.
+
+        pop     rbx
+        ret
+GetCpuVend ENDP
+
+;==============================================================================
+; Memory functions
+;==============================================================================
+
+; Returns: RAX = size of total physical memory in bytes (QWORD).
+;          RDX = size of available physical memory in bytes (QWORD).
+;          R8D = memory load percentage (DWORD).
+GetMemory PROC
+        mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
+        lea     rcx, msEx
+        call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
+
+        test    rax, rax                    ; nz = success; 0 = failure
+        jz      @fail
+
+        mov     rax, msEx.ullTotalPhys      ; Load QWORD from struct (total RAM).
+        mov     rdx, msEx.ullAvailPhys      ; Load QWORD from struct (available RAM).
+        mov     r8d, msEx.dwMemoryLoad      ; Load DWORD from struct (memory load percentage).
+        ret
+
+@fail:
+        xor     rax, rax                    ; Fail = return zeros.
+        xor     rdx, rdx
+        xor     r8, r8
+        ret
+GetMemory ENDP
+
+;==============================================================================
+; Program entry point / main
+;==============================================================================
+
 main    PROC
         sub     rsp, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
 
@@ -679,36 +717,13 @@ main    PROC
         call    GetStdHandle                ; Return handle to standard output.
         mov     [stdout], rax               ; Store the handle for console output.
 
-;       Operating system section:
+;       HARDWARE section:
         StrOut  newln, LENGTHOF newln
-        StrOut  os_title, LENGTHOF os_title
+        StrOut  header_line, LENGTHOF header_line
+        StrOut  header_hw, LENGTHOF header_hw
+        StrOut  header_line, LENGTHOF header_line
 
-        StrOut  os_version, LENGTHOF os_version
-        call    GetWinVer
-        StrOut  rax, r8d
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  os_edition, LENGTHOF os_edition
-        call    GetWinEdition
-        StrOut  rax, r8d
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  os_build, LENGTHOF os_build
-        call    GetWinBuild
-        lea     rdi, tmpbuf + MaxBuf
-        call    Int2Str
-        StrOut  rax, r8d
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  comp_name, LENGTHOF comp_name
-        call    GetComputerNameStr
-        StrOut  rax, r8d
-        StrOut  newln, LENGTHOF newln
-
-;       Processor section:
-        StrOut  newln, LENGTHOF newln
-        StrOut  cpu_title, LENGTHOF cpu_title
-
+        ; Processor:
         StrOut  cpu_vendor, LENGTHOF cpu_vendor
         call    GetCpuVend
         StrOut  rax, r8d
@@ -730,10 +745,7 @@ main    PROC
         StrOut  rax, r8d
         StrOut  newln, LENGTHOF newln
 
-;       Memory section:
-        StrOut  newln, LENGTHOF newln
-        StrOut  mem_title, LENGTHOF mem_title
-
+        ; Memory:
         StrOut  mem_total, LENGTHOF mem_total
         call    GetMemory
         mov     r12, rdx                    ; Save free memory QWORD for later use.
@@ -773,10 +785,37 @@ main    PROC
         StrOut  percent_sn, LENGTHOF percent_sn
         StrOut  newln, LENGTHOF newln
 
-;       Uptime section:
+;       SOFTWARE section:
         StrOut  newln, LENGTHOF newln
-        StrOut  uptime_title, LENGTHOF uptime_title
+        StrOut  header_line, LENGTHOF header_line
+        StrOut  header_sw, LENGTHOF header_sw
+        StrOut  header_line, LENGTHOF header_line
 
+        ; Operating system:
+        StrOut  os_version, LENGTHOF os_version
+        call    GetWinVer
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  os_edition, LENGTHOF os_edition
+        call    GetWinEdition
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  os_build, LENGTHOF os_build
+        call    GetWinBuild
+        lea     rdi, tmpbuf + MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  comp_name, LENGTHOF comp_name
+        call    GetComputerNameStr
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        ; Uptime:
+        StrOut  uptime, LENGTHOF uptime
         call    PrintFormatUptime
         StrOut  newln, LENGTHOF newln
 
