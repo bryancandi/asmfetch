@@ -118,28 +118,28 @@ header_line     BYTE    "==============================", 0Dh, 0Ah
 header_hw       BYTE    "           Hardware", 0Dh, 0Ah
 header_sw       BYTE    "           Software", 0Dh, 0Ah
 ; Processor strings:
-cpu_vendor      BYTE    "CPU Vendor   : "
-cpu_name        BYTE    "CPU Model    : "
-cpu_cores       BYTE    "CPU Cores    : "
-cpu_arch        BYTE    "CPU Arch     : "
+cpu_vendor      BYTE    "CPU Vendor    : "
+cpu_name        BYTE    "CPU Model     : "
+cpu_cores       BYTE    "CPU Threads   : "
+cpu_arch        BYTE    "CPU Arch      : "
 cpu_x86         BYTE    "x86"
 cpu_x64         BYTE    "x64 (AMD64)"
 cpu_arm         BYTE    "ARM"
 cpu_arm64       BYTE    "ARM64"
 cpu_ia64        BYTE    "Intel Itanium"
 ; Memory strings:
-mem_total       BYTE    "RAM Total    : "
-mem_avail       BYTE    "RAM Free     : "
-mem_load        BYTE    "RAM Load     : "
+mem_total       BYTE    "RAM Total     : "
+mem_avail       BYTE    "RAM Available : "
+mem_load        BYTE    "RAM Load      : "
 gibi_whole      QWORD   ?                   ; Store whole portion of RAM size.
 gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size.
 gib_label       BYTE    " GiB"
 decimal_pt      BYTE    "."
 percent_sn      BYTE    "%"
 ; Operating system strings:
-os_version      BYTE    "OS Version   : "
-os_edition      BYTE    "OS Edition   : "
-os_build        BYTE    "OS Build     : "
+os_version      BYTE    "OS Version    : "
+os_edition      BYTE    "OS Edition    : "
+os_build        BYTE    "OS Build      : "
 win_11          BYTE    "Windows 11"
 win_10          BYTE    "Windows 10"
 win_legacy      BYTE    "Windows (pre-10)"
@@ -155,11 +155,11 @@ ed_ent          BYTE    "Enterprise"
 ed_ent_e        BYTE    "Enterprise E"
 ed_ent_n        BYTE    "Enterprise N"
 productType     DWORD   ?                   ; Store return value from GetProductInfo function.
-comp_name       BYTE    "Host         : "
+comp_name       BYTE    "Hostname      : "
 compNameBuf     BYTE    MaxBuf DUP (0)
 compNameSize    DWORD   MaxBuf
 ; Uptime strings:
-uptime          BYTE    "Uptime       : "
+uptime          BYTE    "Uptime        : "
 comma_sp        BYTE    ", "
 days            QWORD   ?                   ; Uptime days value.
 days_label      BYTE    " days"
@@ -722,6 +722,7 @@ main    PROC
         StrOut  header_line, LENGTHOF header_line
         StrOut  header_hw, LENGTHOF header_hw
         StrOut  header_line, LENGTHOF header_line
+        StrOut  newln, LENGTHOF newln
 
         ; Processor:
         StrOut  cpu_vendor, LENGTHOF cpu_vendor
@@ -791,6 +792,7 @@ main    PROC
         StrOut  header_line, LENGTHOF header_line
         StrOut  header_sw, LENGTHOF header_sw
         StrOut  header_line, LENGTHOF header_line
+        StrOut  newln, LENGTHOF newln
 
         ; Operating system:
         StrOut  os_version, LENGTHOF os_version
