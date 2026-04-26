@@ -115,8 +115,8 @@ membuf          DWORD   MaxBuf DUP (?)      ; Memory data buffer.
 timebuf         DWORD   MaxBuf DUP (?)      ; Uptime string buffer.
 ; Header strings:
 header_line     BYTE    "==============================", 0Dh, 0Ah
-header_hw       BYTE    "           Hardware           ", 0Dh, 0Ah
-header_sw       BYTE    "           Software           ", 0Dh, 0Ah
+header_hw       BYTE    "           Hardware", 0Dh, 0Ah
+header_sw       BYTE    "           Software", 0Dh, 0Ah
 ; Processor strings:
 cpu_vendor      BYTE    "CPU Vendor   : "
 cpu_name        BYTE    "CPU Model    : "
