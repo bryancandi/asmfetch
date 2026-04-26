@@ -6,23 +6,23 @@
 Example output (may not include all current features):
 
 ```text
---- Operating System ---
-Version      : Windows 11
-Edition      : Pro
-Build        : 26200
-Host         : THINKPAD-T490S
-
---- Processor ---
-Vendor       : GenuineIntel
-Model        : Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz
-Cores        : 8
-Architecture : x64 (AMD64)
-
---- Memory ---
+==============================
+ Hardware Information
+==============================
+CPU Vendor   : GenuineIntel
+CPU Model    : Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz
+CPU Cores    : 8
+CPU Arch     : x64 (AMD64)
 RAM Total    : 15.75 GiB
-RAM Free     : 8.4 GiB
-Memory Load  : 48%
+RAM Free     : 7.67 GiB
+RAM Load     : 51%
 
---- System Uptime ---
-7 days, 1 hour, 12 minutes, 36 seconds
+==============================
+ Software Information
+==============================
+OS Version   : Windows 11
+OS Edition   : Pro
+OS Build     : 26200
+Host         : THINKPAD-T490S
+Uptime       : 7 days, 1 hour, 12 minutes, 36 seconds
 ```
