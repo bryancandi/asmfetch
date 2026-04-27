@@ -6,25 +6,24 @@
 Example output (may not include all current features):
 
 ```text
-==============================
-           Hardware
-==============================
+Processor
+----------------------------------------
+Vendor       : GenuineIntel
+Model        : Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz
+Threads      : 8
+Architecture : x86_64
 
-CPU Vendor    : GenuineIntel
-CPU Model     : Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz
-CPU Threads   : 8
-CPU Arch      : x64 (AMD64)
-RAM Total     : 15.75 GiB
-RAM Available : 7.11 GiB
-RAM Load      : 54%
+Memory
+----------------------------------------
+Total        : 15.75 GiB
+Available    : 8.18 GiB
+Load         : 48%
 
-==============================
-           Software
-==============================
-
-OS Version    : Windows 11
-OS Edition    : Pro
-OS Build      : 26200
-Hostname      : THINKPAD-T490S
-Uptime        : 7 days, 1 hour, 12 minutes, 36 seconds
+Operating System
+----------------------------------------
+Version      : Windows 11
+Edition      : Pro
+Build        : 26200
+Hostname     : THINKPAD-T490S
+Uptime       : 7 days, 1 hour, 12 minutes, 36 seconds
 ```
