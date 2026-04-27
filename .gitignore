@@ -17,6 +17,7 @@
 !*.bat
 !*.c
 !*.cpp
+!*.inc
 !*.jpg
 !*.jpeg
 !*.md
