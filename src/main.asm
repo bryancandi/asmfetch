@@ -10,9 +10,9 @@
 ; link.exe /OUT:build\asmfetch.exe build\*.obj /SUBSYSTEM:console /ENTRY:main
 ;==============================================================================
 
-;==============================================================================
+;=========================================
 ; Libraries and Prototypes
-;==============================================================================
+;=========================================
 
 INCLUDELIB kernel32.lib                     ; Win32 API functions.
 INCLUDELIB ntdll.lib                        ; NT native system calls.
@@ -27,9 +27,9 @@ GetProductInfo          PROTO :DWORD, :DWORD, :DWORD, :DWORD, :PTR DWORD
 GetNativeSystemInfo     PROTO :PTR SYSTEM_INFO
 GetComputerNameA        PROTO :PTR BYTE, :PTR DWORD
 
-;==============================================================================
+;=========================================
 ; Constants
-;==============================================================================
+;=========================================
 
 STD_OUTPUT_HANDLE EQU   -11                 ; Device code for console output.
 MaxBuf            EQU   256
@@ -39,9 +39,9 @@ SecPerDay         EQU   86400
 SecPerHour        EQU   3600
 SecPerMinute      EQU   60
 
-;==============================================================================
+;=========================================
 ; Macros
-;==============================================================================
+;=========================================
 
 ; Macro: write a string to the console. addr may be RAX or a label; len is copied into R8D.
 StrOut  MACRO   addr, len
@@ -56,9 +56,9 @@ ENDIF
         call    WriteConsoleA
         ENDM
 
-;==============================================================================
-; Structure Definitions (Win32/NT)
-;==============================================================================
+;=========================================
+; Structure Definitions
+;=========================================
 
 ; Structure used by GetNativeSystemInfo.
 SYSTEM_INFO STRUCT
@@ -181,9 +181,9 @@ nbwr            DWORD   ?                   ; Number of bytes (characters) actua
 nbrd            DWORD   ?                   ; Number of bytes (characters) actually read.
 
         .CODE
-;==============================================================================
-; Utility functions
-;==============================================================================
+;=========================================
+; Utility Functions
+;=========================================
 
 ; Convert integer in RAX to ASCII string in buffer pointed to by RDI; digits are stored in reverse order.
 Int2Str PROC
@@ -264,9 +264,9 @@ ConvertToDHMS PROC
         ret
 ConvertToDHMS ENDP
 
-;==============================================================================
-; Operating System related functions
-;==============================================================================
+;=========================================
+; Operating System Functions
+;=========================================
 
 ; Return pointer to Windows version string in RAX; byte length in R8D.
 GetWinVer PROC
@@ -553,9 +553,9 @@ uptime_done:
         ret
 PrintFormatUptime ENDP
 
-;==============================================================================
-; Processor functions
-;==============================================================================
+;=========================================
+; Processor Functions
+;=========================================
 
 ; Returns: RAX = pointer to CPU architecture string in RAX.
 ;          R8D = length of string in R8D.
@@ -678,9 +678,9 @@ GetCpuVend PROC
         ret
 GetCpuVend ENDP
 
-;==============================================================================
-; Memory functions
-;==============================================================================
+;=========================================
+; Memory Functions
+;=========================================
 
 ; Returns: RAX = size of total physical memory in bytes (QWORD).
 ;          RDX = size of available physical memory in bytes (QWORD).
@@ -705,9 +705,9 @@ GetMemory PROC
         ret
 GetMemory ENDP
 
-;==============================================================================
-; Program entry point / main
-;==============================================================================
+;=========================================
+; Program Entry Point / main
+;=========================================
 
 main    PROC
         sub     rsp, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
