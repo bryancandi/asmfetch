@@ -114,32 +114,33 @@ cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer.
 membuf          DWORD   MaxBuf DUP (?)      ; Memory data buffer.
 timebuf         DWORD   MaxBuf DUP (?)      ; Uptime string buffer.
 ; Header strings:
-header_line     BYTE    "==============================", 0Dh, 0Ah
-header_hw       BYTE    "           Hardware", 0Dh, 0Ah
-header_sw       BYTE    "           Software", 0Dh, 0Ah
+header_line     BYTE    "----------------------------------------", 0Dh, 0Ah
+header_proc     BYTE    "Processor", 0Dh, 0Ah
+header_mem      BYTE    "Memory", 0Dh, 0Ah
+header_os       BYTE    "Operating System", 0Dh, 0Ah
 ; Processor strings:
-cpu_vendor      BYTE    "CPU Vendor    : "
-cpu_name        BYTE    "CPU Model     : "
-cpu_cores       BYTE    "CPU Threads   : "
-cpu_arch        BYTE    "CPU Arch      : "
+cpu_vendor      BYTE    "Vendor       : "
+cpu_name        BYTE    "Model        : "
+cpu_cores       BYTE    "Threads      : "
+cpu_arch        BYTE    "Architecture : "
 cpu_x86         BYTE    "x86"
-cpu_x64         BYTE    "x64 (AMD64)"
+cpu_x64         BYTE    "x86_64"
 cpu_arm         BYTE    "ARM"
 cpu_arm64       BYTE    "ARM64"
 cpu_ia64        BYTE    "Intel Itanium"
 ; Memory strings:
-mem_total       BYTE    "RAM Total     : "
-mem_avail       BYTE    "RAM Available : "
-mem_load        BYTE    "RAM Load      : "
+mem_total       BYTE    "Total        : "
+mem_avail       BYTE    "Available    : "
+mem_load        BYTE    "Load         : "
 gibi_whole      QWORD   ?                   ; Store whole portion of RAM size.
 gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size.
 gib_label       BYTE    " GiB"
 decimal_pt      BYTE    "."
 percent_sn      BYTE    "%"
 ; Operating system strings:
-os_version      BYTE    "OS Version    : "
-os_edition      BYTE    "OS Edition    : "
-os_build        BYTE    "OS Build      : "
+os_version      BYTE    "Version      : "
+os_edition      BYTE    "Edition      : "
+os_build        BYTE    "Build        : "
 win_11          BYTE    "Windows 11"
 win_10          BYTE    "Windows 10"
 win_legacy      BYTE    "Windows (pre-10)"
@@ -155,11 +156,11 @@ ed_ent          BYTE    "Enterprise"
 ed_ent_e        BYTE    "Enterprise E"
 ed_ent_n        BYTE    "Enterprise N"
 productType     DWORD   ?                   ; Store return value from GetProductInfo function.
-comp_name       BYTE    "Hostname      : "
+comp_name       BYTE    "Hostname     : "
 compNameBuf     BYTE    MaxBuf DUP (0)
 compNameSize    DWORD   MaxBuf
 ; Uptime strings:
-uptime          BYTE    "Uptime        : "
+uptime          BYTE    "Uptime       : "
 comma_sp        BYTE    ", "
 days            QWORD   ?                   ; Uptime days value.
 days_label      BYTE    " days"
@@ -717,14 +718,11 @@ main    PROC
         call    GetStdHandle                ; Return handle to standard output.
         mov     [stdout], rax               ; Store the handle for console output.
 
-;       HARDWARE section:
+        ; Processor section:
         StrOut  newln, LENGTHOF newln
+        StrOut  header_proc, LENGTHOF header_proc
         StrOut  header_line, LENGTHOF header_line
-        StrOut  header_hw, LENGTHOF header_hw
-        StrOut  header_line, LENGTHOF header_line
-        StrOut  newln, LENGTHOF newln
 
-        ; Processor:
         StrOut  cpu_vendor, LENGTHOF cpu_vendor
         call    GetCpuVend
         StrOut  rax, r8d
@@ -747,7 +745,11 @@ main    PROC
         StrOut  rax, r8d
         StrOut  newln, LENGTHOF newln
 
-        ; Memory:
+        ; Memory section:
+        StrOut  newln, LENGTHOF newln
+        StrOut  header_mem, LENGTHOF header_mem
+        StrOut  header_line, LENGTHOF header_line
+
         StrOut  mem_total, LENGTHOF mem_total
         call    GetMemory
         mov     r12, rdx                    ; Save free memory QWORD for later use.
@@ -787,14 +789,11 @@ main    PROC
         StrOut  percent_sn, LENGTHOF percent_sn
         StrOut  newln, LENGTHOF newln
 
-;       SOFTWARE section:
+        ; Operating System:
         StrOut  newln, LENGTHOF newln
+        StrOut  header_os, LENGTHOF header_os
         StrOut  header_line, LENGTHOF header_line
-        StrOut  header_sw, LENGTHOF header_sw
-        StrOut  header_line, LENGTHOF header_line
-        StrOut  newln, LENGTHOF newln
 
-        ; Operating system:
         StrOut  os_version, LENGTHOF os_version
         call    GetWinVer
         StrOut  rax, r8d
