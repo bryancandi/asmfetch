@@ -7,7 +7,7 @@
 ;=========================================
 
 INCLUDE const.inc
-INCLUDE public.inc
+INCLUDE globals.inc
 INCLUDE structs.inc
 INCLUDE winapi.inc
 

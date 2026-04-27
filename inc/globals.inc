@@ -1,5 +1,5 @@
 ;=========================================
-; public.inc - Public Declarations
+; globals.inc - Global Declarations
 ;=========================================
 
 EXTERNDEF cpubuf:DWORD

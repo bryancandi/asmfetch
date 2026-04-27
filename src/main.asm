@@ -15,9 +15,9 @@
 ;=========================================
 
 INCLUDE const.inc
+INCLUDE globals.inc
 INCLUDE macros.inc
 INCLUDE proto.inc
-INCLUDE public.inc
 INCLUDE structs.inc
 INCLUDE winapi.inc
 

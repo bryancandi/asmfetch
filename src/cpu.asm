@@ -6,7 +6,7 @@
 ; Includes
 ;=========================================
 
-INCLUDE public.inc
+INCLUDE globals.inc
 INCLUDE structs.inc
 INCLUDE winapi.inc
 
