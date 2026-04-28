@@ -30,6 +30,7 @@ compNameSize    DWORD   MaxBuf
         .CODE
 ; Return pointer to Windows version string in RAX; byte length in R8D.
 GetWinVer PROC
+        sub     rsp, 40                     ; Reserve shadow space for WinAPI call.
         mov     osEx.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOEXW
         lea     rcx, osEx
         call    RtlGetVersion
@@ -47,24 +48,29 @@ GetWinVer PROC
 is_win11:
         lea     rax, win_11
         mov     r8d, LENGTHOF win_11
+        add     rsp, 40
         ret
 is_win10:
         lea     rax, win_10
         mov     r8d, LENGTHOF win_10
+        add     rsp, 40
         ret
 is_legacy:
         lea     rax, win_legacy
         mov     r8d, LENGTHOF win_legacy
+        add     rsp, 40
         ret
 
 @fail:
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
+        add     rsp, 40
         ret
 GetWinVer ENDP
 
 ; Return pointer to Windows edition string in RAX; byte length in R8D.
 GetWinEdition PROC
+        sub     rsp, 40                     ; Reserve shadow space for WinAPI call.
         mov     ecx, osEx.dwMajorVersion
         mov     edx, osEx.dwMinorVersion
         movzx   r8d, osEx.wServicePackMajor ; Copy 16-bit WORD; zero-extend to 32-bit DWORD in R8D.
@@ -105,55 +111,68 @@ GetWinEdition PROC
 w_home:
         lea     rax, ed_home
         mov     r8d, LENGTHOF ed_home
+        add     rsp, 40
         ret
 w_home_sl:
         lea     rax, ed_home_sl
         mov     r8d, LENGTHOF ed_home_sl
+        add     rsp, 40
         ret
 w_home_n:
         lea     rax, ed_home_n
         mov     r8d, LENGTHOF ed_home_n
+        add     rsp, 40
         ret
 w_pro:
         lea     rax, ed_pro
         mov     r8d, LENGTHOF ed_pro
+        add     rsp, 40
         ret
 w_pro_n:
         lea     rax, ed_pro_n
         mov     r8d, LENGTHOF ed_pro_n
+        add     rsp, 40
         ret
 w_pro_edu:
         lea     rax, ed_pro_edu
         mov     r8d, LENGTHOF ed_pro_edu
+        add     rsp, 40
         ret
 w_pro_ws:
         lea     rax, ed_pro_ws
         mov     r8d, LENGTHOF ed_pro_ws
+        add     rsp, 40
         ret
 w_edu:
         lea     rax, ed_edu
         mov     r8d, LENGTHOF ed_edu
+        add     rsp, 40
         ret
 w_ent:
         lea     rax, ed_ent
         mov     r8d, LENGTHOF ed_ent
+        add     rsp, 40
         ret
 w_ent_e:
         lea     rax, ed_ent_e
         mov     r8d, LENGTHOF ed_ent_e
+        add     rsp, 40
         ret
 w_ent_n:
         lea     rax, ed_ent_n
         mov     r8d, LENGTHOF ed_ent_n
+        add     rsp, 40
         ret
 w_unknown:
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
+        add     rsp, 40
         ret
 GetWinEdition ENDP
 
 ; Return Windows build number in EAX.
 GetWinBuild PROC
+        sub     rsp, 40                     ; Reserve shadow space for WinAPI call.
         mov     osEx.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOEXW
         lea     rcx, osEx
         call    RtlGetVersion
@@ -162,15 +181,18 @@ GetWinBuild PROC
         jnz     @fail
 
         mov     eax, osEx.dwBuildNumber
+        add     rsp, 40
         ret
 
 @fail:
         xor     eax, eax                    ; Return build number: 0
+        add     rsp, 40
         ret
 GetWinBuild ENDP
 
 ; Return pointer to computer name string in RAX; byte length in R8D.
 GetComputerNameStr PROC
+        sub     rsp, 40                     ; Reserve shadow space for WinAPI call.
         mov     compNameSize, MaxBuf
 
         lea     rcx, compNameBuf            ; Buffer for GetComputerNameA to write to.
@@ -182,11 +204,13 @@ GetComputerNameStr PROC
 
         lea     rax, compNameBuf
         mov     r8d, compNameSize
+        add     rsp, 40
         ret
 
 @fail:
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
+        add     rsp, 40
         ret
 GetComputerNameStr ENDP
         END

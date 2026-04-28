@@ -62,6 +62,7 @@ ConvertToDHMS ENDP
 
 ; Print a formatted uptime string directly to the console when called.
 PrintFormatUptime PROC
+        sub     rsp, 40                     ; Reserve shadow space for WinAPI call.
         push    rdi
 
         call    GetTickCount64              ; RAX = uptime in milliseconds.
@@ -179,6 +180,7 @@ single_second:
 
 uptime_done:
         pop     rdi
+        add     rsp, 40
         ret
 PrintFormatUptime ENDP
         END

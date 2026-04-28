@@ -20,6 +20,7 @@ cpu_ia64        BYTE    "Intel Itanium"
 ; Returns: RAX = pointer to CPU architecture string in RAX.
 ;          R8D = length of string in R8D.
 GetCpuArch PROC
+        sub     rsp, 40                     ; Reserve shadow space for WinAPI call.
         lea     rcx, sysInf
         call    GetNativeSystemInfo
         movzx   eax, sysInf.wProcessorArchitecture
@@ -36,26 +37,32 @@ GetCpuArch PROC
 
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
+        add     rsp, 40
         ret
 is_x86:
         lea     rax, cpu_x86
         mov     r8d, LENGTHOF cpu_x86
+        add     rsp, 40
         ret
 is_x64:
         lea     rax, cpu_x64
         mov     r8d, LENGTHOF cpu_x64
+        add     rsp, 40
         ret
 is_arm:
         lea     rax, cpu_arm
         mov     r8d, LENGTHOF cpu_arm
+        add     rsp, 40
         ret
 is_arm64:
         lea     rax, cpu_arm64
         mov     r8d, LENGTHOF cpu_arm64
+        add     rsp, 40
         ret
 is_ia64:
         lea     rax, cpu_ia64
         mov     r8d, LENGTHOF cpu_ia64
+        add     rsp, 40
         ret
 GetCpuArch ENDP
 
