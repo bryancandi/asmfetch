@@ -2,19 +2,13 @@
 ; os.asm - Operating System Functions
 ;=========================================
 
-;=========================================
-; Includes
-;=========================================
-
 INCLUDE const.inc
 INCLUDE globals.inc
 INCLUDE structs.inc
 INCLUDE winapi.inc
 
         .DATA
-; Initialize structure
-osEx            RTL_OSVERSIONINFOEXW <>
-; OS strings:
+osEx            RTL_OSVERSIONINFOEXW <>     ; Initialize structure
 win_11          BYTE    "Windows 11"
 win_10          BYTE    "Windows 10"
 win_legacy      BYTE    "Windows (pre-10)"

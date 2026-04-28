@@ -2,18 +2,14 @@
 ; cpu.asm - Processor Functions
 ;=========================================
 
-;=========================================
-; Includes
-;=========================================
-
+INCLUDE const.inc
 INCLUDE globals.inc
 INCLUDE structs.inc
 INCLUDE winapi.inc
 
         .DATA
-; Initialize structure
-sysInf          SYSTEM_INFO <>
-; Processor strings:
+sysInf          SYSTEM_INFO <>              ; Initialize structure
+cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer.
 cpu_x86         BYTE    "x86"
 cpu_x64         BYTE    "x86_64"
 cpu_arm         BYTE    "ARM"

@@ -2,10 +2,6 @@
 ; uptime.asm - Format / Print System Uptime
 ;=========================================
 
-;=========================================
-; Includes
-;=========================================
-
 INCLUDE const.inc
 INCLUDE globals.inc
 INCLUDE macros.inc

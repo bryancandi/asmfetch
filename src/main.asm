@@ -10,21 +10,14 @@
 ; link.exe /OUT:build\asmfetch.exe build\*.obj /SUBSYSTEM:console /ENTRY:main
 ;==============================================================================
 
-;=========================================
-; Includes
-;=========================================
-
 INCLUDE const.inc
 INCLUDE globals.inc
 INCLUDE macros.inc
 INCLUDE proto.inc
-INCLUDE structs.inc
 INCLUDE winapi.inc
 
         .DATA
-; Output buffers:
-tmpbuf          DWORD   MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use.
-cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer.
+buffer          DWORD   MaxBuf DUP (?)      ; Output buffer.
 ; Header strings:
 header_line     BYTE    "----------------------------------------", 0Dh, 0Ah
 header_proc     BYTE    "Processor", 0Dh, 0Ah
@@ -57,10 +50,6 @@ nbwr            DWORD   ?                   ; Number of bytes (characters) actua
 nbrd            DWORD   ?                   ; Number of bytes (characters) actually read.
 
         .CODE
-;=========================================
-; Program Entry Point / main
-;=========================================
-
 main    PROC
         sub     rsp, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
 
@@ -86,7 +75,7 @@ main    PROC
 
         StrOut  cpu_cores, LENGTHOF cpu_cores
         call    GetCpuCores
-        lea     rdi, cpubuf + MaxBuf
+        lea     rdi, buffer + MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  newln, LENGTHOF newln
@@ -153,7 +142,7 @@ main    PROC
 
         StrOut  os_build, LENGTHOF os_build
         call    GetWinBuild
-        lea     rdi, tmpbuf + MaxBuf
+        lea     rdi, buffer + MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  newln, LENGTHOF newln

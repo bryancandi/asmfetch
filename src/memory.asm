@@ -2,16 +2,11 @@
 ; memory.asm - Memory Functions
 ;=========================================
 
-;=========================================
-; Includes
-;=========================================
-
 INCLUDE structs.inc
 INCLUDE winapi.inc
 
         .DATA
-; Initialize structure
-msEx            MEMORYSTATUSEX <>
+msEx            MEMORYSTATUSEX <>           ; Initialize structure
 
         .CODE
 ; Returns: RAX = size of total physical memory in bytes (QWORD).
