@@ -10,4 +10,4 @@ ml64.exe /c /I inc\ /Fo build\ ^
     src\uptime.asm ^
     src\utility.asm
 
-link.exe /OUT:build\asmfetch.exe build\*.obj /SUBSYSTEM:console /ENTRY:main
+link.exe /OUT:asmfetch.exe build\*.obj /SUBSYSTEM:console /ENTRY:main
