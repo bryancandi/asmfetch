@@ -6,8 +6,8 @@
 ; Assemble with Microsoft Macro Assembler (ml64.exe)
 ; Link with Microsoft Incremental Linker (link.exe)
 ;
-; ml64.exe /c /Fo build\ src\main.asm
-; link.exe /OUT:build\asmfetch.exe build\*.obj /SUBSYSTEM:console /ENTRY:main
+; ml64.exe /c asmfetch.asm
+; link.exe asmfetch.obj /SUBSYSTEM:console /ENTRY:start /OUT:asmfetch.exe
 ;==============================================================================
 
 ;=========================================
@@ -17,15 +17,15 @@
 INCLUDELIB kernel32.lib                     ; Win32 API functions.
 INCLUDELIB ntdll.lib                        ; NT native system calls.
 
-ExitProcess             PROTO               ; Terminate the current process.
-GetStdHandle            PROTO               ; Retrieve a handle to a standard device (input/output).
-WriteConsoleA           PROTO
-GlobalMemoryStatusEx    PROTO :PTR MEMORYSTATUSEX
+ExitProcess             PROTO uExitCode:DWORD  ; Terminate the current process.
+GetStdHandle            PROTO nStdHandle:DWORD ; Retrieve a handle to a standard device (input/output).
+WriteConsoleA           PROTO hConsoleOutput:QWORD, lpBuffer:PTR, nNumberOfCharsToWrite:DWORD, lpNumberOfCharsWritten:PTR DWORD, lpReserved:PTR
+GlobalMemoryStatusEx    PROTO lpBuffer:PTR MEMORYSTATUSEX
 GetTickCount64          PROTO
-RtlGetVersion           PROTO :PTR RTL_OSVERSIONINFOEXW
-GetProductInfo          PROTO :DWORD, :DWORD, :DWORD, :DWORD, :PTR DWORD
-GetNativeSystemInfo     PROTO :PTR SYSTEM_INFO
-GetComputerNameA        PROTO :PTR BYTE, :PTR DWORD
+RtlGetVersion           PROTO lpVersionInformation:PTR RTL_OSVERSIONINFOEXW
+GetProductInfo          PROTO dwOSMajorVersion:DWORD, dwOSMinorVersion:DWORD, dwSpMajorVersion:DWORD, dwSpMinorVersion:DWORD, pdwReturnedProductType:PTR DWORD
+GetNativeSystemInfo     PROTO lpSystemInfo:PTR SYSTEM_INFO
+GetComputerNameA        PROTO lpBuffer:PTR BYTE, nSize:PTR DWORD
 
 ;=========================================
 ; Constants
@@ -707,10 +707,10 @@ GetMemory PROC
 GetMemory ENDP
 
 ;=========================================
-; Program Entry Point / main
+; Program Entry Point
 ;=========================================
 
-main    PROC
+start   PROC
         sub     rsp, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
 
         ; Obtain handle for standard output.
@@ -821,7 +821,7 @@ main    PROC
         call    PrintFormatUptime
         StrOut  newln, LENGTHOF newln
 
-        xor     rcx, rcx
+        xor     ecx, ecx
         call    ExitProcess
-main    ENDP
+start   ENDP
         END
