@@ -6,6 +6,14 @@
 Example output (may not include all current features):
 
 ```text
+Operating System
+----------------------------------------
+Version      : Windows 11
+Edition      : Pro
+Build        : 26200
+Hostname     : THINKPAD-T490S
+Uptime       : 7 days, 1 hour, 12 minutes, 36 seconds
+
 Processor
 ----------------------------------------
 Vendor       : GenuineIntel
@@ -18,12 +26,4 @@ Memory
 Total        : 15.75 GiB
 Available    : 8.18 GiB
 Load         : 48%
-
-Operating System
-----------------------------------------
-Version      : Windows 11
-Edition      : Pro
-Build        : 26200
-Hostname     : THINKPAD-T490S
-Uptime       : 7 days, 1 hour, 12 minutes, 36 seconds
 ```
