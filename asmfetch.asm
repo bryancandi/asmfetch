@@ -175,11 +175,128 @@ second_label    BYTE    " second"
 ; Formatting and utility:
 unknown         BYTE    "unknown"
 newln           BYTE    0Dh, 0Ah            ; CRLF
+dblsp           BYTE    0Dh, 0Ah, 0Ah       ; CRLFLF
 stdout          QWORD   ?                   ; Handle to standard output device.
 nbwr            DWORD   ?                   ; Number of bytes (characters) actually written.
 nbrd            DWORD   ?                   ; Number of bytes (characters) actually read.
 
         .CODE
+;=========================================
+; Program Entry Point / Start
+;=========================================
+
+start   PROC
+        sub     rsp, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
+
+        ; Obtain handle for standard output.
+        mov     rcx, STD_OUTPUT_HANDLE      ; Standard output device code for GetStdHandle.
+        call    GetStdHandle                ; Return handle to standard output.
+        mov     [stdout], rax               ; Store the handle for console output.
+
+        ; Operating System:
+        StrOut  header_os, LENGTHOF header_os
+        StrOut  header_line, LENGTHOF header_line
+
+        StrOut  os_version, LENGTHOF os_version
+        call    GetWinVer
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  os_edition, LENGTHOF os_edition
+        call    GetWinEdition
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  os_build, LENGTHOF os_build
+        call    GetWinBuild
+        lea     rdi, tmpbuf + MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  comp_name, LENGTHOF comp_name
+        call    GetComputerNameStr
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        ; Uptime:
+        StrOut  uptime, LENGTHOF uptime
+        call    PrintFormatUptime
+        StrOut  newln, LENGTHOF newln
+
+        ; Processor section:
+        StrOut  header_proc, LENGTHOF header_proc
+        StrOut  header_line, LENGTHOF header_line
+
+        StrOut  cpu_vendor, LENGTHOF cpu_vendor
+        call    GetCpuVend
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  cpu_name, LENGTHOF cpu_name
+        call    GetCpuBrand
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  cpu_cores, LENGTHOF cpu_cores
+        call    GetCpuCores
+        lea     rdi, cpubuf + MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  cpu_arch, LENGTHOF cpu_arch
+        call    GetCpuArch
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        ; Memory section:
+        StrOut  header_mem, LENGTHOF header_mem
+        StrOut  header_line, LENGTHOF header_line
+
+        StrOut  mem_total, LENGTHOF mem_total
+        call    GetMemory
+        mov     r12, rdx                    ; Save free memory QWORD for later use.
+        mov     r13d, r8d                   ; Save memory load DWORD for later use.
+        call    Byte2GiB
+        mov     rax, [gibi_whole]
+        lea     rdi, membuf + MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  decimal_pt, LENGTHOF decimal_pt
+        mov     rax, [gibi_fract]
+        lea     rdi, membuf + MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  gib_label, LENGTHOF gib_label
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  mem_avail, LENGTHOF mem_avail
+        mov     rax, r12                    ; Load free memory QWORD.
+        call    Byte2GiB
+        mov     rax, [gibi_whole]
+        lea     rdi, membuf + MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  decimal_pt, LENGTHOF decimal_pt
+        mov     rax, [gibi_fract]
+        lea     rdi, membuf + MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  gib_label, LENGTHOF gib_label
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  mem_load, LENGTHOF mem_load
+        mov     eax, r13d                   ; Load memory load DWORD.
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  percent_sn, LENGTHOF percent_sn
+        StrOut  dblsp, LENGTHOF dblsp
+
+        xor     ecx, ecx
+        call    ExitProcess
+start   ENDP
+
 ;=========================================
 ; Utility Functions
 ;=========================================
@@ -547,7 +664,6 @@ single_second:
         StrOut  second_label, LENGTHOF second_label
 
 uptime_done:
-        StrOut  newln, LENGTHOF newln
         pop     rdi
         ret
 PrintFormatUptime ENDP
@@ -704,119 +820,4 @@ GetMemory PROC
         ret
 GetMemory ENDP
 
-;=========================================
-; Program Entry Point
-;=========================================
-
-start   PROC
-        sub     rsp, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
-
-        ; Obtain handle for standard output.
-        mov     rcx, STD_OUTPUT_HANDLE      ; Standard output device code for GetStdHandle.
-        call    GetStdHandle                ; Return handle to standard output.
-        mov     [stdout], rax               ; Store the handle for console output.
-
-        ; Processor section:
-        StrOut  header_proc, LENGTHOF header_proc
-        StrOut  header_line, LENGTHOF header_line
-
-        StrOut  cpu_vendor, LENGTHOF cpu_vendor
-        call    GetCpuVend
-        StrOut  rax, r8d
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  cpu_name, LENGTHOF cpu_name
-        call    GetCpuBrand
-        StrOut  rax, r8d
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  cpu_cores, LENGTHOF cpu_cores
-        call    GetCpuCores
-        lea     rdi, cpubuf + MaxBuf
-        call    Int2Str
-        StrOut  rax, r8d
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  cpu_arch, LENGTHOF cpu_arch
-        call    GetCpuArch
-        StrOut  rax, r8d
-        StrOut  newln, LENGTHOF newln
-
-        ; Memory section:
-        StrOut  header_mem, LENGTHOF header_mem
-        StrOut  header_line, LENGTHOF header_line
-
-        StrOut  mem_total, LENGTHOF mem_total
-        call    GetMemory
-        mov     r12, rdx                    ; Save free memory QWORD for later use.
-        mov     r13d, r8d                   ; Save memory load DWORD for later use.
-        call    Byte2GiB
-        mov     rax, [gibi_whole]
-        lea     rdi, membuf + MaxBuf
-        call    Int2Str
-        StrOut  rax, r8d
-        StrOut  decimal_pt, LENGTHOF decimal_pt
-        mov     rax, [gibi_fract]
-        lea     rdi, membuf + MaxBuf
-        call    Int2Str
-        StrOut  rax, r8d
-        StrOut  gib_label, LENGTHOF gib_label
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  mem_avail, LENGTHOF mem_avail
-        mov     rax, r12                    ; Load free memory QWORD.
-        call    Byte2GiB
-        mov     rax, [gibi_whole]
-        lea     rdi, membuf + MaxBuf
-        call    Int2Str
-        StrOut  rax, r8d
-        StrOut  decimal_pt, LENGTHOF decimal_pt
-        mov     rax, [gibi_fract]
-        lea     rdi, membuf + MaxBuf
-        call    Int2Str
-        StrOut  rax, r8d
-        StrOut  gib_label, LENGTHOF gib_label
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  mem_load, LENGTHOF mem_load
-        mov     eax, r13d                   ; Load memory load DWORD.
-        call    Int2Str
-        StrOut  rax, r8d
-        StrOut  percent_sn, LENGTHOF percent_sn
-        StrOut  newln, LENGTHOF newln
-
-        ; Operating System:
-        StrOut  header_os, LENGTHOF header_os
-        StrOut  header_line, LENGTHOF header_line
-
-        StrOut  os_version, LENGTHOF os_version
-        call    GetWinVer
-        StrOut  rax, r8d
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  os_edition, LENGTHOF os_edition
-        call    GetWinEdition
-        StrOut  rax, r8d
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  os_build, LENGTHOF os_build
-        call    GetWinBuild
-        lea     rdi, tmpbuf + MaxBuf
-        call    Int2Str
-        StrOut  rax, r8d
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  comp_name, LENGTHOF comp_name
-        call    GetComputerNameStr
-        StrOut  rax, r8d
-        StrOut  newln, LENGTHOF newln
-
-        ; Uptime:
-        StrOut  uptime, LENGTHOF uptime
-        call    PrintFormatUptime
-        StrOut  newln, LENGTHOF newln
-
-        xor     ecx, ecx
-        call    ExitProcess
-start   ENDP
         END
