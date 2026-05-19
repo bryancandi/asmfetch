@@ -1,13 +1,11 @@
 ;==============================================================================
-; asmfetch: x64 System Information utility for Windows console.
-; Author: Bryan C.
-; Date  : 2026
-;
-; Assemble with Microsoft Macro Assembler (ml64.exe)
-; Link with Microsoft Incremental Linker (link.exe)
+; asmfetch.asm - x64 System Information utility for Windows console.
 ;
 ; ml64.exe /c asmfetch.asm
 ; link.exe asmfetch.obj /SUBSYSTEM:console /ENTRY:start /OUT:asmfetch.exe
+;
+; Copyright (c) 2026 by Bryan C.
+; Licensed under the Apache License, Version 2.0
 ;==============================================================================
 
 ;=========================================
@@ -115,9 +113,9 @@ membuf          DWORD   MaxBuf DUP (?)      ; Memory data buffer.
 timebuf         DWORD   MaxBuf DUP (?)      ; Uptime string buffer.
 ; Header strings:
 header_line     BYTE    "----------------------------------------", 0Dh, 0Ah
-header_proc     BYTE    "Processor", 0Dh, 0Ah
-header_mem      BYTE    "Memory", 0Dh, 0Ah
-header_os       BYTE    "Operating System", 0Dh, 0Ah
+header_proc     BYTE    0Dh, 0Ah, "Processor", 0Dh, 0Ah
+header_mem      BYTE    0Dh, 0Ah, "Memory", 0Dh, 0Ah
+header_os       BYTE    0Dh, 0Ah, "Operating System", 0Dh, 0Ah
 ; Processor strings:
 cpu_vendor      BYTE    "Vendor       : "
 cpu_name        BYTE    "Model        : "
@@ -719,7 +717,6 @@ start   PROC
         mov     [stdout], rax               ; Store the handle for console output.
 
         ; Processor section:
-        StrOut  newln, LENGTHOF newln
         StrOut  header_proc, LENGTHOF header_proc
         StrOut  header_line, LENGTHOF header_line
 
@@ -746,7 +743,6 @@ start   PROC
         StrOut  newln, LENGTHOF newln
 
         ; Memory section:
-        StrOut  newln, LENGTHOF newln
         StrOut  header_mem, LENGTHOF header_mem
         StrOut  header_line, LENGTHOF header_line
 
@@ -790,7 +786,6 @@ start   PROC
         StrOut  newln, LENGTHOF newln
 
         ; Operating System:
-        StrOut  newln, LENGTHOF newln
         StrOut  header_os, LENGTHOF header_os
         StrOut  header_line, LENGTHOF header_line
 
