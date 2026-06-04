@@ -3,6 +3,7 @@
 
 ***
 
+This project is still in development and more features may be added with future updates.\
 Example output (may not include all current features):
 
 ```text
