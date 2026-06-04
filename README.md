@@ -3,8 +3,8 @@
 
 ***
 
-This project is still in development and more features may be added with future updates.\
-Example output (may not include all current features):
+This project is in development -- more features will be added.\
+Example (output may differ from the latest version):
 
 ```text
 Operating System
