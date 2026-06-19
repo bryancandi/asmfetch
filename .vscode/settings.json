@@ -2,5 +2,30 @@
     "editor.insertSpaces": true,
     "editor.tabSize": 4,
     "editor.detectIndentation": false,
-    "editor.renderWhitespace": "selection"
+    "editor.renderWhitespace": "selection",
+    "cSpell.words": [
+        "asmfetch",
+        "cpubuf",
+        "cpuid",
+        "CRLFLF",
+        "dblsp",
+        "DHMS",
+        "ENDM",
+        "ENDP",
+        "fract",
+        "gibi",
+        "IFIDNI",
+        "INCLUDELIB",
+        "LENGTHOF",
+        "membuf",
+        "MEMORYSTATUSEX",
+        "movzx",
+        "nbrd",
+        "nbwr",
+        "newln",
+        "ntdll",
+        "OSVERSIONINFOEXW",
+        "timebuf",
+        "tmpbuf"
+    ]
 }
