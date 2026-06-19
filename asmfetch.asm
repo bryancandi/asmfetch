@@ -12,11 +12,12 @@
 ; Libraries and Prototypes
 ;=========================================
 
-INCLUDELIB kernel32.lib                     ; Win32 API functions.
-INCLUDELIB ntdll.lib                        ; NT native system calls.
+INCLUDELIB advapi32.lib                     ; Advanced Windows Base API
+INCLUDELIB kernel32.lib                     ; User-mode Windows Kernel API
+INCLUDELIB ntdll.lib                        ; Windows Native API
 
-ExitProcess             PROTO uExitCode:DWORD  ; Terminate the current process.
-GetStdHandle            PROTO nStdHandle:DWORD ; Retrieve a handle to a standard device (input/output).
+ExitProcess             PROTO uExitCode:DWORD  ; Terminate the current process
+GetStdHandle            PROTO nStdHandle:DWORD ; Retrieve a handle to a standard device (input/output)
 WriteConsoleA           PROTO hConsoleOutput:QWORD, lpBuffer:PTR, nNumberOfCharsToWrite:DWORD, lpNumberOfCharsWritten:PTR DWORD, lpReserved:PTR
 GlobalMemoryStatusEx    PROTO lpBuffer:PTR MEMORYSTATUSEX
 GetTickCount64          PROTO
@@ -29,7 +30,7 @@ GetComputerNameA        PROTO lpBuffer:PTR BYTE, nSize:PTR DWORD
 ; Constants
 ;=========================================
 
-STD_OUTPUT_HANDLE EQU   -11                 ; Device code for console output.
+STD_OUTPUT_HANDLE EQU   -11                 ; Device code for console output
 MaxBuf            EQU   256
 BytesPerGib       EQU   1024 * 1024 * 1024
 MsPerSecond       EQU   1000
@@ -43,14 +44,14 @@ SecPerMinute      EQU   60
 
 ; Macro: write a string to the console. addr may be RAX or a label; len is copied into R8D.
 StrOut  MACRO   addr, len
-        mov     rcx, [stdout]               ; Arg 1: output device handle.
-IFIDNI  <addr>, <rax>                       ; If addr is RAX, use it directly; otherwise LEA of the label.
-        mov     rdx, rax                    ; Arg 2: pointer to byte array in RAX register.
+        mov     rcx, [stdout]               ; Arg 1: output device handle
+IFIDNI  <addr>, <rax>                       ; If addr is RAX, use it directly; otherwise LEA of the label
+        mov     rdx, rax                    ; Arg 2: pointer to byte array in RAX register
 ELSE
-        lea     rdx, addr                   ; Arg 2: pointer to byte array label.
+        lea     rdx, addr                   ; Arg 2: pointer to byte array label
 ENDIF
-        mov     r8d, len                    ; Arg 3: number of bytes to write.
-        lea     r9, nbwr                    ; Arg 4: pointer to variable that receives number of bytes written.
+        mov     r8d, len                    ; Arg 3: number of bytes to write
+        lea     r9, nbwr                    ; Arg 4: pointer to variable that receives number of bytes written
         call    WriteConsoleA
         ENDM
 
@@ -107,10 +108,10 @@ sysInf          SYSTEM_INFO <>
 msEx            MEMORYSTATUSEX <>
 osEx            RTL_OSVERSIONINFOEXW <>
 ; Output buffers:
-tmpbuf          DWORD   MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use.
-cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer.
-membuf          DWORD   MaxBuf DUP (?)      ; Memory data buffer.
-timebuf         DWORD   MaxBuf DUP (?)      ; Uptime string buffer.
+tmpbuf          DWORD   MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use
+cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer
+membuf          DWORD   MaxBuf DUP (?)      ; Memory data buffer
+timebuf         DWORD   MaxBuf DUP (?)      ; Uptime string buffer
 ; Header strings:
 header_line     BYTE    "----------------------------------------", 0Dh, 0Ah
 header_proc     BYTE    0Dh, 0Ah, "Processor", 0Dh, 0Ah
@@ -130,8 +131,8 @@ cpu_ia64        BYTE    "Intel Itanium"
 mem_total       BYTE    "Total        : "
 mem_avail       BYTE    "Available    : "
 mem_load        BYTE    "Load         : "
-gibi_whole      QWORD   ?                   ; Store whole portion of RAM size.
-gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size.
+gibi_whole      QWORD   ?                   ; Store whole portion of RAM size
+gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size
 gib_label       BYTE    " GiB"
 decimal_pt      BYTE    "."
 percent_sn      BYTE    "%"
@@ -139,6 +140,7 @@ percent_sn      BYTE    "%"
 os_version      BYTE    "Version      : "
 os_edition      BYTE    "Edition      : "
 os_build        BYTE    "Build        : "
+os_ubr          BYTE    "Revision     : "
 win_11          BYTE    "Windows 11"
 win_10          BYTE    "Windows 10"
 win_legacy      BYTE    "Windows (pre-10)"
@@ -153,32 +155,35 @@ ed_edu          BYTE    "Education"
 ed_ent          BYTE    "Enterprise"
 ed_ent_e        BYTE    "Enterprise E"
 ed_ent_n        BYTE    "Enterprise N"
-productType     DWORD   ?                   ; Store return value from GetProductInfo function.
+productType     DWORD   ?                   ; Store return value from GetProductInfo function
 comp_name       BYTE    "Hostname     : "
 compNameBuf     BYTE    MaxBuf DUP (0)
 compNameSize    DWORD   MaxBuf
 ; Uptime strings:
 uptime          BYTE    "Uptime       : "
 comma_sp        BYTE    ", "
-days            QWORD   ?                   ; Uptime days value.
+days            QWORD   ?                   ; Uptime days value
 days_label      BYTE    " days"
 day_label       BYTE    " day"
-hours           QWORD   ?                   ; Uptime hours value.
+hours           QWORD   ?                   ; Uptime hours value
 hours_label     BYTE    " hours"
 hour_label      BYTE    " hour"
-minutes         QWORD   ?                   ; Uptime minutes value.
+minutes         QWORD   ?                   ; Uptime minutes value
 minutes_label   BYTE    " minutes"
 minute_label    BYTE    " minute"
-seconds         QWORD   ?                   ; Uptime seconds value.
+seconds         QWORD   ?                   ; Uptime seconds value
 seconds_label   BYTE    " seconds"
 second_label    BYTE    " second"
 ; Formatting and utility:
 unknown         BYTE    "unknown"
 newln           BYTE    0Dh, 0Ah            ; CRLF
 dblsp           BYTE    0Dh, 0Ah, 0Ah       ; CRLFLF
-stdout          QWORD   ?                   ; Handle to standard output device.
-nbwr            DWORD   ?                   ; Number of bytes (characters) actually written.
-nbrd            DWORD   ?                   ; Number of bytes (characters) actually read.
+stdout          QWORD   ?                   ; Handle to standard output device
+nbwr            DWORD   ?                   ; Number of bytes (characters) actually written
+nbrd            DWORD   ?                   ; Number of bytes (characters) actually read
+; Registry
+ubrSubKey       BYTE    "SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+ubrValName      BYTE    "UBR"
 
         .CODE
 ;=========================================
@@ -186,12 +191,12 @@ nbrd            DWORD   ?                   ; Number of bytes (characters) actua
 ;=========================================
 
 start   PROC
-        sub     rsp, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
+        sub     rsp, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment)
 
         ; Obtain handle for standard output.
-        mov     rcx, STD_OUTPUT_HANDLE      ; Standard output device code for GetStdHandle.
-        call    GetStdHandle                ; Return handle to standard output.
-        mov     [stdout], rax               ; Store the handle for console output.
+        mov     rcx, STD_OUTPUT_HANDLE      ; Standard output device code for GetStdHandle
+        call    GetStdHandle                ; Return handle to standard output
+        mov     [stdout], rax               ; Store the handle for console output
 
         ; Operating System:
         StrOut  header_os, LENGTHOF header_os
@@ -256,8 +261,8 @@ start   PROC
 
         StrOut  mem_total, LENGTHOF mem_total
         call    GetMemory
-        mov     r12, rdx                    ; Save free memory QWORD for later use.
-        mov     r13d, r8d                   ; Save memory load DWORD for later use.
+        mov     r12, rdx                    ; Save free memory QWORD for later use
+        mov     r13d, r8d                   ; Save memory load DWORD for later use
         call    Byte2GiB
         mov     rax, [gibi_whole]
         lea     rdi, membuf + MaxBuf
@@ -272,7 +277,7 @@ start   PROC
         StrOut  newln, LENGTHOF newln
 
         StrOut  mem_avail, LENGTHOF mem_avail
-        mov     rax, r12                    ; Load free memory QWORD.
+        mov     rax, r12                    ; Load free memory QWORD
         call    Byte2GiB
         mov     rax, [gibi_whole]
         lea     rdi, membuf + MaxBuf
@@ -287,7 +292,7 @@ start   PROC
         StrOut  newln, LENGTHOF newln
 
         StrOut  mem_load, LENGTHOF mem_load
-        mov     eax, r13d                   ; Load memory load DWORD.
+        mov     eax, r13d                   ; Load memory load DWORD
         call    Int2Str
         StrOut  rax, r8d
         StrOut  percent_sn, LENGTHOF percent_sn
@@ -303,24 +308,24 @@ start   ENDP
 
 ; Convert integer in RAX to ASCII string in buffer pointed to by RDI; digits are stored in reverse order.
 Int2Str PROC
-        push    rbx                         ; Preserve RBX register.
+        push    rbx                         ; Preserve RBX register
 
         mov     rbx, 10                     ; Divisor (10)
         xor     r8d, r8d                    ; Initial string length = 0
 
 @loop:
-        xor     rdx, rdx                    ; Clear RDX for division.
-        div     rbx                         ; RAX = quotient, RDX = remainder.
-        add     dl, '0'                     ; Remainder to ASCII digit.
+        xor     rdx, rdx                    ; Clear RDX for division
+        div     rbx                         ; RAX = quotient, RDX = remainder
+        add     dl, '0'                     ; Remainder to ASCII digit
         dec     rdi
-        mov     [rdi], dl                   ; Store digit.
+        mov     [rdi], dl                   ; Store digit
         inc     r8d                         ; Length + 1
         test    rax, rax
         jnz     @loop
 
-        mov     rax, rdi                    ; Return pointer to first digit.
+        mov     rax, rdi                    ; Return pointer to first digit
 
-        pop     rbx                         ; Restore RBX.
+        pop     rbx                         ; Restore RBX
         ret
 Int2Str ENDP
 
@@ -328,19 +333,19 @@ Int2Str ENDP
 Byte2GiB PROC
         ; RAX = bytes
         xor     rdx, rdx
-        mov     r8, BytesPerGib             ; R8 = 1 GiB in bytes.
-        div     r8                          ; RAX = RAX/R8, RDX = remainder.
+        mov     r8, BytesPerGib             ; R8 = 1 GiB in bytes
+        div     r8                          ; RAX = RAX/R8, RDX = remainder
 
-        ; RAX = whole portion of result, RDX = fractional portion of result.
-        mov     [gibi_whole], rax           ; Store whole portion.
+        ; RAX = whole portion of result, RDX = fractional portion of result
+        mov     [gibi_whole], rax           ; Store whole portion
 
         ; Scale remainder to 2 decimal digits: (remainder * 100) / GiB
-        mov     rax, rdx                    ; Move remainder into RAX.
+        mov     rax, rdx                    ; Move remainder into RAX
         mov     r8, 100
-        mul     r8                          ; Multiply by 100 to convert fractional GiB into a 2-digit integer (shift decimal right).
+        mul     r8                          ; Multiply by 100 to convert fractional GiB into a 2-digit integer (shift decimal right)
         mov     r8, BytesPerGib
         div     r8                          ; (remainder * 100) / GiB
-        mov     [gibi_fract], rax           ; Store fractional portion.
+        mov     [gibi_fract], rax           ; Store fractional portion
 
         ret
 Byte2GiB ENDP
@@ -348,17 +353,17 @@ Byte2GiB ENDP
 ; Convert milliseconds in RAX to a human-readable format.
 ConvertToDHMS PROC
         ; RAX = uptime milliseconds
-        xor     rdx, rdx                    ; Clear RDX for division.
-        mov     r8, MsPerSecond             ; Divisor in R8 = milliseconds per second.
-        div     r8                          ; RAX = seconds.
+        xor     rdx, rdx                    ; Clear RDX for division
+        mov     r8, MsPerSecond             ; Divisor in R8 = milliseconds per second
+        div     r8                          ; RAX = seconds
 
-        ; Seconds can now be divided out into Days, Hours, Minutes.
+        ; Seconds can now be divided out into Days, Hours, Minutes
         ; Days:
         xor     rdx, rdx
         mov     r8, SecPerDay
-        div     r8                          ; RAX = days, RDX = remaining seconds.
-        mov     [days], rax                 ; Store result.
-        mov     rax, rdx                    ; Carry remainder forward.
+        div     r8                          ; RAX = days, RDX = remaining seconds
+        mov     [days], rax                 ; Store result
+        mov     rax, rdx                    ; Carry remainder forward
 
         ; Hours:
         xor     rdx, rdx
@@ -395,10 +400,10 @@ GetWinVer PROC
 
         mov     eax, osEx.dwBuildNumber
         cmp     eax, 22000                  ; Is Windows 11 or newer?
-        jae     is_win11                    ; Yes.
+        jae     is_win11                    ; Yes
         cmp     eax, 10240                  ; Is Windows 10?
-        jae     is_win10                    ; Yes.
-        jmp     is_legacy                   ; No.
+        jae     is_win10                    ; Yes
+        jmp     is_legacy                   ; No
 
 is_win11:
         lea     rax, win_11
@@ -423,10 +428,10 @@ GetWinVer ENDP
 GetWinEdition PROC
         mov     ecx, osEx.dwMajorVersion
         mov     edx, osEx.dwMinorVersion
-        movzx   r8d, osEx.wServicePackMajor ; Copy 16-bit WORD; zero-extend to 32-bit DWORD in R8D.
+        movzx   r8d, osEx.wServicePackMajor ; Copy 16-bit WORD; zero-extend to 32-bit DWORD in R8D
         movzx   r9d, osEx.wServicePackMinor
         lea     rax, productType
-        mov     [rsp + 32], rax             ; Shadow space + 5th arg.
+        mov     [rsp + 32], rax             ; Shadow space + 5th arg
         call    GetProductInfo
 
         test    eax, eax                    ; nz = success; 0 = failure
@@ -456,7 +461,7 @@ GetWinEdition PROC
         cmp     eax, 0000001Bh
         je      w_ent_n
 
-        jmp     w_unknown                   ; Default case if edition is not listed.
+        jmp     w_unknown                   ; Default case if edition is not listed
 
 w_home:
         lea     rax, ed_home
@@ -529,8 +534,8 @@ GetWinBuild ENDP
 GetComputerNameStr PROC
         mov     compNameSize, MaxBuf
 
-        lea     rcx, compNameBuf            ; Buffer for GetComputerNameA to write to.
-        lea     rdx, compNameSize           ; Bytes written to buffer.
+        lea     rcx, compNameBuf            ; Buffer for GetComputerNameA to write to
+        lea     rdx, compNameSize           ; Bytes written to buffer
         call    GetComputerNameA
 
         test    eax, eax                    ; nz = success; 0 = failure
@@ -550,18 +555,18 @@ GetComputerNameStr ENDP
 PrintFormatUptime PROC
         push    rdi
 
-        call    GetTickCount64              ; RAX = uptime in milliseconds.
-        call    ConvertToDHMS               ; Convert milliseconds and store in 'days', 'hours', 'minutes', 'seconds'.
+        call    GetTickCount64              ; RAX = uptime in milliseconds
+        call    ConvertToDHMS               ; Convert milliseconds and store in 'days', 'hours', 'minutes', 'seconds'
 
-        xor     r10d, r10d                  ; Comma flag: 0 = first unit, 1 = comma before next unit.
+        xor     r10d, r10d                  ; Comma flag: 0 = first unit, 1 = comma before next unit
 
         mov     rax, [days]
         cmp     rax, 0                      ; Days = 0?
-        je      hours_out                   ; Yes, jump to hours.
+        je      hours_out                   ; Yes, jump to hours
         cmp     rax, 1                      ; Days = 1?
-        je      single_day                  ; Yes, jump.
+        je      single_day                  ; Yes, jump
 
-        lea     rdi, timebuf + MaxBuf       ; No, continue with plural.
+        lea     rdi, timebuf + MaxBuf       ; No, continue with plural
         call    Int2Str
         StrOut  rax, r8d
         StrOut  days_label, LENGTHOF days_label
@@ -574,24 +579,24 @@ single_day:
         StrOut  day_label, LENGTHOF day_label
 
 days_done:
-        mov     r10d, 1                     ; Set comma flag.
+        mov     r10d, 1                     ; Set comma flag
 
 hours_out:
         mov     rax, [hours]
         cmp     rax, 0                      ; Hours = 0?
-        je      minutes_out                 ; Yes, jump to minutes.
+        je      minutes_out                 ; Yes, jump to minutes
 
         cmp     r10d, 0                     ; Already printed a previous value?
-        je      hours_no_comma              ; No, do not print a comma.
-        push    rax                         ; Preserve RAX before StrOut macro call.
-        StrOut  comma_sp, LENGTHOF comma_sp ; Yes, print a comma.
-        pop     rax                         ; Restore RAX for next function call.
+        je      hours_no_comma              ; No, do not print a comma
+        push    rax                         ; Preserve RAX before StrOut macro call
+        StrOut  comma_sp, LENGTHOF comma_sp ; Yes, print a comma
+        pop     rax                         ; Restore RAX for next function call
 hours_no_comma:
 
         cmp     rax, 1                      ; Hours = 1?
-        je      single_hour                 ; Yes, jump.
+        je      single_hour                 ; Yes, jump
 
-        lea     rdi, timebuf + MaxBuf       ; No, continue with plural.
+        lea     rdi, timebuf + MaxBuf       ; No, continue with plural
         call    Int2Str
         StrOut  rax, r8d
         StrOut  hours_label, LENGTHOF hours_label
@@ -604,24 +609,24 @@ single_hour:
         StrOut  hour_label, LENGTHOF hour_label
 
 hours_done:
-        mov     r10d, 1                     ; Set comma flag.
+        mov     r10d, 1                     ; Set comma flag
 
 minutes_out:
         mov     rax, [minutes]
         cmp     rax, 0                      ; Minutes = 0?
-        je      seconds_out                 ; Yes, jump to seconds.
+        je      seconds_out                 ; Yes, jump to seconds
 
         cmp     r10d, 0                     ; Already printed a previous value?
-        je      minutes_no_comma            ; No, do not print comma.
-        push    rax                         ; Preserve RAX before StrOut macro call.
-        StrOut  comma_sp, LENGTHOF comma_sp ; Yes, print a comma.
-        pop     rax                         ; Restore RAX for next function call.
+        je      minutes_no_comma            ; No, do not print comma
+        push    rax                         ; Preserve RAX before StrOut macro call
+        StrOut  comma_sp, LENGTHOF comma_sp ; Yes, print a comma
+        pop     rax                         ; Restore RAX for next function call
 minutes_no_comma:
 
         cmp     rax, 1                      ; Minutes = 1?
-        je      single_minute               ; Yes, jump.
+        je      single_minute               ; Yes, jump
 
-        lea     rdi, timebuf + MaxBuf       ; No, continue with plural.
+        lea     rdi, timebuf + MaxBuf       ; No, continue with plural
         call    Int2Str
         StrOut  rax, r8d
         StrOut  minutes_label, LENGTHOF minutes_label
@@ -634,7 +639,7 @@ single_minute:
         StrOut  minute_label, LENGTHOF minute_label
 
 minutes_done:
-        mov     r10d, 1                     ; Set comma flag.
+        mov     r10d, 1                     ; Set comma flag
 
 seconds_out:
         mov     rax, [seconds]
@@ -642,16 +647,16 @@ seconds_out:
         je      uptime_done
 
         cmp     r10d, 0                     ; Already printed a value?
-        je      seconds_no_comma            ; No, do not print comma.
-        push    rax                         ; Preserve RAX before StrOut macro call.
-        StrOut  comma_sp, LENGTHOF comma_sp ; Yes, print a comma.
-        pop     rax                         ; Restore RAX for next function call.
+        je      seconds_no_comma            ; No, do not print comma
+        push    rax                         ; Preserve RAX before StrOut macro call
+        StrOut  comma_sp, LENGTHOF comma_sp ; Yes, print a comma
+        pop     rax                         ; Restore RAX for next function call
 seconds_no_comma:
 
         cmp     rax, 1                      ; Seconds = 1?
-        je      single_second               ; Yes, jump.
+        je      single_second               ; Yes, jump
 
-        lea     rdi, timebuf + MaxBuf       ; No, continue with plural.
+        lea     rdi, timebuf + MaxBuf       ; No, continue with plural
         call    Int2Str
         StrOut  rax, r8d
         StrOut  seconds_label, LENGTHOF seconds_label
@@ -672,8 +677,8 @@ PrintFormatUptime ENDP
 ; Processor Functions
 ;=========================================
 
-; Returns: RAX = pointer to CPU architecture string in RAX.
-;          R8D = length of string in R8D.
+; Returns: RAX = pointer to CPU architecture string in RAX
+;          R8D = length of string in R8D
 GetCpuArch PROC
         lea     rcx, sysInf
         call    GetNativeSystemInfo
@@ -718,7 +723,7 @@ GetCpuArch ENDP
 GetCpuBrand PROC
         push    rbx
 
-        mov     eax, 80000002h              ; 80000002h - 80000004h = processor brand string.
+        mov     eax, 80000002h              ; 80000002h - 80000004h = processor brand string
         cpuid
         mov     [cpubuf], eax
         mov     [cpubuf + 4], ebx
@@ -739,8 +744,8 @@ GetCpuBrand PROC
         mov     [cpubuf + 40], ecx
         mov     [cpubuf + 44], edx
 
-        lea     rax, cpubuf                 ; RAX: point to buffer address.
-        mov     r8d, 48                     ; Return length in R8D.
+        lea     rax, cpubuf                 ; RAX: point to buffer address
+        mov     r8d, 48                     ; Return length in R8D
 
         pop     rbx
         ret
@@ -750,9 +755,9 @@ GetCpuBrand ENDP
 GetCpuCores PROC
         push    rbx
 
-        mov     eax, 0                      ; Load vendor string.
+        mov     eax, 0                      ; Load vendor string
         cpuid
-        cmp     ebx, 'Auth'                 ; Check for the first part of "AuthenticAMD" in vendor string.
+        cmp     ebx, 'Auth'                 ; Check for the first part of "AuthenticAMD" in vendor string
         je      amd_proc
 
         ; Intel processor
@@ -760,7 +765,7 @@ GetCpuCores PROC
         xor     ecx, ecx                    ; Sub-leaf: 0
         cpuid
         shr     eax, 26                     ; Shift bits 31:26 to bottom
-        inc     eax                         ; Core count in EAX.
+        inc     eax                         ; Core count in EAX
         jmp     cores_done
 
         ; AMD Processor
@@ -768,8 +773,8 @@ amd_proc:
         mov     eax, 80000008h
         cpuid
         and     ecx, 0FFh                   ; Mask bits 7:0
-        inc     ecx                         ; Core count in ECX.
-        mov     eax, ecx                    ; Normalize: core count in EAX.
+        inc     ecx                         ; Core count in ECX
+        mov     eax, ecx                    ; Normalize: core count in EAX
 
 cores_done:
         pop     rbx
@@ -780,14 +785,14 @@ GetCpuCores ENDP
 GetCpuVend PROC
         push    rbx
 
-        mov     eax, 0                      ; CPUID leaf 0 = vendor.
-        cpuid                               ; CPUID instruction.
+        mov     eax, 0                      ; CPUID leaf 0 = vendor
+        cpuid                               ; CPUID instruction
         mov     [cpubuf], ebx
         mov     [cpubuf + 4], edx
         mov     [cpubuf + 8], ecx
 
-        lea     rax, cpubuf                 ; RAX: point to buffer address.
-        mov     r8d, 12                     ; Return length in R8D.
+        lea     rax, cpubuf                 ; RAX: point to buffer address
+        mov     r8d, 12                     ; Return length in R8D
 
         pop     rbx
         ret
@@ -797,24 +802,24 @@ GetCpuVend ENDP
 ; Memory Functions
 ;=========================================
 
-; Returns: RAX = size of total physical memory in bytes (QWORD).
-;          RDX = size of available physical memory in bytes (QWORD).
-;          R8D = memory load percentage (DWORD).
+; Returns: RAX = size of total physical memory in bytes (QWORD)
+;          RDX = size of available physical memory in bytes (QWORD)
+;          R8D = memory load percentage (DWORD)
 GetMemory PROC
         mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
         lea     rcx, msEx
-        call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
+        call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer)
 
         test    rax, rax                    ; nz = success; 0 = failure
         jz      @fail
 
-        mov     rax, msEx.ullTotalPhys      ; Load QWORD from struct (total RAM).
-        mov     rdx, msEx.ullAvailPhys      ; Load QWORD from struct (available RAM).
-        mov     r8d, msEx.dwMemoryLoad      ; Load DWORD from struct (memory load percentage).
+        mov     rax, msEx.ullTotalPhys      ; Load QWORD from struct (total RAM)
+        mov     rdx, msEx.ullAvailPhys      ; Load QWORD from struct (available RAM)
+        mov     r8d, msEx.dwMemoryLoad      ; Load DWORD from struct (memory load percentage)
         ret
 
 @fail:
-        xor     rax, rax                    ; Fail = return zeros.
+        xor     rax, rax                    ; Fail = return zeros
         xor     rdx, rdx
         xor     r8, r8
         ret
