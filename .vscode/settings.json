@@ -4,6 +4,7 @@
     "editor.detectIndentation": false,
     "editor.renderWhitespace": "selection",
     "cSpell.words": [
+        "advapi",
         "asmfetch",
         "cpubuf",
         "cpuid",
