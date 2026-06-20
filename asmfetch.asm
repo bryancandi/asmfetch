@@ -1,35 +1,42 @@
-;==============================================================================
+;============================================================================
 ; asmfetch.asm - x64 System Information utility for Windows console.
 ;
+; Assemble and link with:
 ; ml64.exe /c asmfetch.asm
 ; link.exe asmfetch.obj /SUBSYSTEM:console /ENTRY:start /OUT:asmfetch.exe
 ;
 ; Copyright (c) 2026 by Bryan C.
 ; Licensed under the Apache License, Version 2.0
-;==============================================================================
-
-;=========================================
-; Libraries and Prototypes
-;=========================================
+;============================================================================
 
 INCLUDELIB advapi32.lib                     ; Advanced Windows Base API
 INCLUDELIB kernel32.lib                     ; User-mode Windows Kernel API
 INCLUDELIB ntdll.lib                        ; Windows Native API
 
-ExitProcess             PROTO uExitCode:DWORD  ; Terminate the current process
-GetStdHandle            PROTO nStdHandle:DWORD ; Retrieve a handle to a standard device (input/output)
+;----------------------------------------------------------------------------
+; Win32 function prototypes
+; x64 args in: RCX, RDX, R8, R9, stack
+;----------------------------------------------------------------------------
+
+; --- System ---
+ExitProcess             PROTO uExitCode:DWORD
+RegGetValueA            PROTO hkey:QWORD, lpSubKey:PTR BYTE, lpValue:PTR BYTE, dwFlags:DWORD, pdwType:PTR DWORD, pvData:PTR, pcbData:PTR DWORD
+
+; --- Console I/O ---
+GetStdHandle            PROTO nStdHandle:DWORD
 WriteConsoleA           PROTO hConsoleOutput:QWORD, lpBuffer:PTR, nNumberOfCharsToWrite:DWORD, lpNumberOfCharsWritten:PTR DWORD, lpReserved:PTR
-GlobalMemoryStatusEx    PROTO lpBuffer:PTR MEMORYSTATUSEX
-GetTickCount64          PROTO
-RtlGetVersion           PROTO lpVersionInformation:PTR RTL_OSVERSIONINFOEXW
+
+; --- System Information ---
+GetComputerNameA        PROTO lpBuffer:PTR BYTE, nSize:PTR DWORD
 GetProductInfo          PROTO dwOSMajorVersion:DWORD, dwOSMinorVersion:DWORD, dwSpMajorVersion:DWORD, dwSpMinorVersion:DWORD, pdwReturnedProductType:PTR DWORD
 GetNativeSystemInfo     PROTO lpSystemInfo:PTR SYSTEM_INFO
-GetComputerNameA        PROTO lpBuffer:PTR BYTE, nSize:PTR DWORD
-RegGetValueA            PROTO hkey:QWORD, lpSubKey:PTR, lpValue:PTR, dwFlags:DWORD, pdwType:PTR, pvData:PTR, pcbData:PTR
+GetTickCount64          PROTO
+GlobalMemoryStatusEx    PROTO lpBuffer:PTR MEMORYSTATUSEX
+RtlGetVersion           PROTO lpVersionInformation:PTR RTL_OSVERSIONINFOEXW
 
-;=========================================
+;----------------------------------------------------------------------------
 ; Constants
-;=========================================
+;----------------------------------------------------------------------------
 
 STD_OUTPUT_HANDLE   EQU -11
 MaxBuf              EQU 256
@@ -41,9 +48,9 @@ SecPerMinute        EQU 60
 HKEY_LOCAL_MACHINE  EQU 80000002h
 RRF_RT_REG_DWORD    EQU 10h
 
-;=========================================
+;----------------------------------------------------------------------------
 ; Macros
-;=========================================
+;----------------------------------------------------------------------------
 
 ; Macro: write a string to the console. addr may be RAX or a label; len is copied into R8D.
 StrOut  MACRO   addr, len
@@ -59,9 +66,9 @@ ENDIF
         call    WriteConsoleA
         ENDM
 
-;=========================================
+;----------------------------------------------------------------------------
 ; Structure Definitions
-;=========================================
+;----------------------------------------------------------------------------
 
 ; Structure used by GetNativeSystemInfo.
 SYSTEM_INFO STRUCT
@@ -105,6 +112,10 @@ RTL_OSVERSIONINFOEXW STRUCT
     wProductType                WORD    ?
     wReserved                   WORD    ?
 RTL_OSVERSIONINFOEXW ENDS
+
+;----------------------------------------------------------------------------
+; Data Segment
+;----------------------------------------------------------------------------
 
         .DATA
 ; System information structures (zero-initialized):
@@ -184,18 +195,18 @@ dblsp           BYTE    0Dh, 0Ah, 0Ah       ; CRLFLF
 stdout          QWORD   ?                   ; Handle to standard output device
 nbwr            DWORD   ?                   ; Number of bytes (characters) actually written
 nbrd            DWORD   ?                   ; Number of bytes (characters) actually read
-; Registry
+; Registry:
 ubrSubKey       BYTE    "SOFTWARE\Microsoft\Windows NT\CurrentVersion", 0
 ubrValName      BYTE    "UBR", 0
 ubrBuffer       DWORD   ?
 ubrLength       DWORD   4
 
-        .CODE
-;=========================================
-; Program Entry Point / Start
-;=========================================
+;----------------------------------------------------------------------------
+; Code Segment
+;----------------------------------------------------------------------------
 
-start   PROC
+        .CODE
+start   PROC                                ; Program entry procedure / start
         sub     rsp, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment)
 
         ; Obtain handle for standard output.
