@@ -25,18 +25,21 @@ RtlGetVersion           PROTO lpVersionInformation:PTR RTL_OSVERSIONINFOEXW
 GetProductInfo          PROTO dwOSMajorVersion:DWORD, dwOSMinorVersion:DWORD, dwSpMajorVersion:DWORD, dwSpMinorVersion:DWORD, pdwReturnedProductType:PTR DWORD
 GetNativeSystemInfo     PROTO lpSystemInfo:PTR SYSTEM_INFO
 GetComputerNameA        PROTO lpBuffer:PTR BYTE, nSize:PTR DWORD
+RegGetValueA            PROTO hkey:QWORD, lpSubKey:PTR, lpValue:PTR, dwFlags:DWORD, pdwType:PTR, pvData:PTR, pcbData:PTR
 
 ;=========================================
 ; Constants
 ;=========================================
 
-STD_OUTPUT_HANDLE EQU   -11                 ; Device code for console output
-MaxBuf            EQU   256
-BytesPerGib       EQU   1024 * 1024 * 1024
-MsPerSecond       EQU   1000
-SecPerDay         EQU   86400
-SecPerHour        EQU   3600
-SecPerMinute      EQU   60
+STD_OUTPUT_HANDLE   EQU -11
+MaxBuf              EQU 256
+BytesPerGib         EQU 1024 * 1024 * 1024
+MsPerSecond         EQU 1000
+SecPerDay           EQU 86400
+SecPerHour          EQU 3600
+SecPerMinute        EQU 60
+HKEY_LOCAL_MACHINE  EQU 80000002h
+RRF_RT_REG_DWORD    EQU 10h
 
 ;=========================================
 ; Macros
@@ -52,6 +55,7 @@ ELSE
 ENDIF
         mov     r8d, len                    ; Arg 3: number of bytes to write
         lea     r9, nbwr                    ; Arg 4: pointer to variable that receives number of bytes written
+        mov     QWORD PTR [rsp+32], 0       ; Arg 5: lpOverlapped (NULL pointer on stack)
         call    WriteConsoleA
         ENDM
 
@@ -140,7 +144,6 @@ percent_sn      BYTE    "%"
 os_version      BYTE    "Version      : "
 os_edition      BYTE    "Edition      : "
 os_build        BYTE    "Build        : "
-os_ubr          BYTE    "Revision     : "
 win_11          BYTE    "Windows 11"
 win_10          BYTE    "Windows 10"
 win_legacy      BYTE    "Windows (pre-10)"
@@ -182,8 +185,10 @@ stdout          QWORD   ?                   ; Handle to standard output device
 nbwr            DWORD   ?                   ; Number of bytes (characters) actually written
 nbrd            DWORD   ?                   ; Number of bytes (characters) actually read
 ; Registry
-ubrSubKey       BYTE    "SOFTWARE\Microsoft\Windows NT\CurrentVersion"
-ubrValName      BYTE    "UBR"
+ubrSubKey       BYTE    "SOFTWARE\Microsoft\Windows NT\CurrentVersion", 0
+ubrValName      BYTE    "UBR", 0
+ubrBuffer       DWORD   ?
+ubrLength       DWORD   4
 
         .CODE
 ;=========================================
@@ -214,6 +219,11 @@ start   PROC
 
         StrOut  os_build, LENGTHOF os_build
         call    GetWinBuild
+        lea     rdi, tmpbuf + MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  decimal_pt, LENGTHOF decimal_pt
+        call    GetWinUBR
         lea     rdi, tmpbuf + MaxBuf
         call    Int2Str
         StrOut  rax, r8d
@@ -529,6 +539,42 @@ GetWinBuild PROC
         xor     eax, eax                    ; Return build number: 0
         ret
 GetWinBuild ENDP
+
+; Return Windows Update Build Revision (UBR) from registry in EAX.
+GetWinUBR PROC
+        push    rbx
+        push    rdi
+        sub     rsp, 56                     ; Shadow space + 3 stack args
+
+        lea     rdi, ubrBuffer
+        lea     rbx, ubrLength
+
+        mov     rcx, HKEY_LOCAL_MACHINE     ; hkey
+        lea     rdx, ubrSubKey              ; lpSubKey
+        lea     r8, ubrValName              ; lpValue
+        mov     r9, RRF_RT_REG_DWORD        ; dwFlags
+        mov     QWORD PTR [rsp+32], 0       ; pdwType
+        mov     QWORD PTR [rsp+40], rdi     ; pvData
+        mov     QWORD PTR [rsp+48], rbx     ; pcbData
+        call    RegGetValueA
+
+        test    eax, eax                    ; 0 = success; nz = failure (system error code)
+        jnz     @fail
+
+        mov     eax, DWORD PTR [ubrBuffer]  ; Return UBR (DWORD) in EAX
+
+        add     rsp, 56
+        pop     rdi
+        pop     rbx
+        ret
+
+@fail:
+        xor     eax, eax                    ; Return UBR as 0 in EAX
+        add     rsp, 56
+        pop     rdi
+        pop     rbx
+        ret
+GetWinUBR ENDP
 
 ; Return pointer to computer name string in RAX; byte length in R8D.
 GetComputerNameStr PROC

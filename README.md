@@ -11,8 +11,8 @@ Operating System
 ----------------------------------------
 Version      : Windows 11
 Edition      : Pro
-Build        : 26200
-Hostname     : THINKPAD-T490S
+Build        : 26200.8728
+Hostname     : WIN-THINKPAD
 Uptime       : 7 days, 1 hour, 12 minutes, 36 seconds
 
 Processor
