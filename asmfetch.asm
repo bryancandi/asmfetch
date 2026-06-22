@@ -28,8 +28,10 @@ WriteConsoleA           PROTO hConsoleOutput:QWORD, lpBuffer:PTR, nNumberOfChars
 
 ; --- System Information ---
 GetComputerNameA        PROTO lpBuffer:PTR BYTE, nSize:PTR DWORD
-GetProductInfo          PROTO dwOSMajorVersion:DWORD, dwOSMinorVersion:DWORD, dwSpMajorVersion:DWORD, dwSpMinorVersion:DWORD, pdwReturnedProductType:PTR DWORD
+GetDiskFreeSpaceExA     PROTO lpDirectoryName:PTR BYTE, lpFreeBytesAvailableToCaller:PTR QWORD, lpTotalNumberOfBytes:PTR QWORD, lpTotalNumberOfFreeBytes:PTR QWORD
+GetLogicalDriveStringsA PROTO nBufferLength:DWORD, lpBuffer:PTR BYTE
 GetNativeSystemInfo     PROTO lpSystemInfo:PTR SYSTEM_INFO
+GetProductInfo          PROTO dwOSMajorVersion:DWORD, dwOSMinorVersion:DWORD, dwSpMajorVersion:DWORD, dwSpMinorVersion:DWORD, pdwReturnedProductType:PTR DWORD
 GetTickCount64          PROTO
 GlobalMemoryStatusEx    PROTO lpBuffer:PTR MEMORYSTATUSEX
 RtlGetVersion           PROTO lpVersionInformation:PTR RTL_OSVERSIONINFOEXW
@@ -132,6 +134,7 @@ header_line     BYTE    "----------------------------------------", 0Dh, 0Ah
 header_proc     BYTE    0Dh, 0Ah, "Processor", 0Dh, 0Ah
 header_mem      BYTE    0Dh, 0Ah, "Memory", 0Dh, 0Ah
 header_os       BYTE    0Dh, 0Ah, "Operating System", 0Dh, 0Ah
+header_disks    BYTE    0Dh, 0Ah, "Disks", 0Dh, 0Ah
 ; Processor strings:
 cpu_vendor      BYTE    "Vendor       : "
 cpu_name        BYTE    "Model        : "
@@ -412,6 +415,8 @@ ConvertToDHMS ENDP
 
 ; Return pointer to Windows version string in RAX; byte length in R8D.
 GetWinVer PROC
+        sub     rsp, 40                     ; Shadow space
+
         mov     osEx.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOEXW
         lea     rcx, osEx
         call    RtlGetVersion
@@ -429,24 +434,28 @@ GetWinVer PROC
 is_win11:
         lea     rax, win_11
         mov     r8d, LENGTHOF win_11
-        ret
+        jmp     @done
 is_win10:
         lea     rax, win_10
         mov     r8d, LENGTHOF win_10
-        ret
+        jmp     @done
 is_legacy:
         lea     rax, win_legacy
         mov     r8d, LENGTHOF win_legacy
-        ret
+        jmp     @done
 
 @fail:
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
+@done:
+        add     rsp, 40
         ret
 GetWinVer ENDP
 
 ; Return pointer to Windows edition string in RAX; byte length in R8D.
 GetWinEdition PROC
+        sub     rsp, 40                     ; Shadow space
+
         mov     ecx, osEx.dwMajorVersion
         mov     edx, osEx.dwMinorVersion
         movzx   r8d, osEx.wServicePackMajor ; Copy 16-bit WORD; zero-extend to 32-bit DWORD in R8D
@@ -487,11 +496,11 @@ GetWinEdition PROC
 w_home:
         lea     rax, ed_home
         mov     r8d, LENGTHOF ed_home
-        ret
+        jmp     @done
 w_home_sl:
         lea     rax, ed_home_sl
         mov     r8d, LENGTHOF ed_home_sl
-        ret
+        jmp     @done
 w_home_n:
         lea     rax, ed_home_n
         mov     r8d, LENGTHOF ed_home_n
@@ -499,43 +508,47 @@ w_home_n:
 w_pro:
         lea     rax, ed_pro
         mov     r8d, LENGTHOF ed_pro
-        ret
+        jmp     @done
 w_pro_n:
         lea     rax, ed_pro_n
         mov     r8d, LENGTHOF ed_pro_n
-        ret
+        jmp     @done
 w_pro_edu:
         lea     rax, ed_pro_edu
         mov     r8d, LENGTHOF ed_pro_edu
-        ret
+        jmp     @done
 w_pro_ws:
         lea     rax, ed_pro_ws
         mov     r8d, LENGTHOF ed_pro_ws
-        ret
+        jmp     @done
 w_edu:
         lea     rax, ed_edu
         mov     r8d, LENGTHOF ed_edu
-        ret
+        jmp     @done
 w_ent:
         lea     rax, ed_ent
         mov     r8d, LENGTHOF ed_ent
-        ret
+        jmp     @done
 w_ent_e:
         lea     rax, ed_ent_e
         mov     r8d, LENGTHOF ed_ent_e
-        ret
+        jmp     @done
 w_ent_n:
         lea     rax, ed_ent_n
         mov     r8d, LENGTHOF ed_ent_n
-        ret
+        jmp     @done
 w_unknown:
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
+@done:
+        add     rsp, 40
         ret
 GetWinEdition ENDP
 
 ; Return Windows build number in EAX.
 GetWinBuild PROC
+        sub     rsp, 40                     ; Shadow space
+
         mov     osEx.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOEXW
         lea     rcx, osEx
         call    RtlGetVersion
@@ -544,10 +557,12 @@ GetWinBuild PROC
         jnz     @fail
 
         mov     eax, osEx.dwBuildNumber
+        add     rsp, 40
         ret
 
 @fail:
         xor     eax, eax                    ; Return build number: 0
+        add     rsp, 40
         ret
 GetWinBuild ENDP
 
@@ -589,6 +604,7 @@ GetWinUBR ENDP
 
 ; Return pointer to computer name string in RAX; byte length in R8D.
 GetComputerNameStr PROC
+        sub     rsp, 40                     ; Shadow space
         mov     compNameSize, MaxBuf
 
         lea     rcx, compNameBuf            ; Buffer for GetComputerNameA to write to
@@ -600,17 +616,20 @@ GetComputerNameStr PROC
 
         lea     rax, compNameBuf
         mov     r8d, compNameSize
+        add     rsp, 40
         ret
 
 @fail:
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
+        add     rsp, 40
         ret
 GetComputerNameStr ENDP
 
 ; Print a formatted uptime string directly to the console when called.
 PrintFormatUptime PROC
         push    rdi
+        sub     rsp, 32                     ; Shadow space
 
         call    GetTickCount64              ; RAX = uptime in milliseconds
         call    ConvertToDHMS               ; Convert milliseconds and store in 'days', 'hours', 'minutes', 'seconds'
@@ -726,6 +745,7 @@ single_second:
         StrOut  second_label, LENGTHOF second_label
 
 uptime_done:
+        add     rsp, 32
         pop     rdi
         ret
 PrintFormatUptime ENDP
@@ -737,6 +757,8 @@ PrintFormatUptime ENDP
 ; Returns: RAX = pointer to CPU architecture string in RAX
 ;          R8D = length of string in R8D
 GetCpuArch PROC
+        sub     rsp, 40                     ; Shadow space
+
         lea     rcx, sysInf
         call    GetNativeSystemInfo
         movzx   eax, sysInf.wProcessorArchitecture
@@ -753,26 +775,28 @@ GetCpuArch PROC
 
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
-        ret
+        jmp     @done
 is_x86:
         lea     rax, cpu_x86
         mov     r8d, LENGTHOF cpu_x86
-        ret
+        jmp     @done
 is_x64:
         lea     rax, cpu_x64
         mov     r8d, LENGTHOF cpu_x64
-        ret
+        jmp     @done
 is_arm:
         lea     rax, cpu_arm
         mov     r8d, LENGTHOF cpu_arm
-        ret
+        jmp     @done
 is_arm64:
         lea     rax, cpu_arm64
         mov     r8d, LENGTHOF cpu_arm64
-        ret
+        jmp     @done
 is_ia64:
         lea     rax, cpu_ia64
         mov     r8d, LENGTHOF cpu_ia64
+@done:
+        add     rsp, 40
         ret
 GetCpuArch ENDP
 
@@ -863,6 +887,8 @@ GetCpuVend ENDP
 ;          RDX = size of available physical memory in bytes (QWORD)
 ;          R8D = memory load percentage (DWORD)
 GetMemory PROC
+        sub     rsp, 40                     ; Shadow space
+
         mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
         lea     rcx, msEx
         call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer)
@@ -873,13 +899,29 @@ GetMemory PROC
         mov     rax, msEx.ullTotalPhys      ; Load QWORD from struct (total RAM)
         mov     rdx, msEx.ullAvailPhys      ; Load QWORD from struct (available RAM)
         mov     r8d, msEx.dwMemoryLoad      ; Load DWORD from struct (memory load percentage)
-        ret
+        jmp     @done
 
 @fail:
         xor     rax, rax                    ; Fail = return zeros
         xor     rdx, rdx
         xor     r8, r8
+@done:
+        add     rsp ,40
         ret
 GetMemory ENDP
+
+;=========================================
+; Disk / Storage Functions
+;=========================================
+
+; Print disks size and usage data when called.
+PrintDisks PROC
+        push    rdi
+
+        ;TO-DO: implement GetLogicalDriveStringsA and GetDiskFreeSpaceExA functions.
+
+        pop     rdi
+        ret
+PrintDisks ENDP
 
         END
