@@ -42,13 +42,11 @@ RtlGetVersion           PROTO lpVersionInformation:PTR RTL_OSVERSIONINFOEXW
 
 STD_OUTPUT_HANDLE   EQU -11
 MaxBuf              EQU 256
-BytesPerGib         EQU 1024 * 1024 * 1024
-MsPerSecond         EQU 1000
-SecPerDay           EQU 86400
-SecPerHour          EQU 3600
-SecPerMinute        EQU 60
 HKEY_LOCAL_MACHINE  EQU 80000002h
 RRF_RT_REG_DWORD    EQU 10h
+KIBIBYTE            EQU 1024
+MEBIBYTE            EQU 1024 * 1024
+GIBIBYTE            EQU 1024 * 1024 * 1024
 
 ;----------------------------------------------------------------------------
 ; Macros
@@ -125,10 +123,15 @@ sysInf          SYSTEM_INFO <>
 msEx            MEMORYSTATUSEX <>
 osEx            RTL_OSVERSIONINFOEXW <>
 ; Output buffers:
-tmpbuf          DWORD   MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use
+tmpbuf          BYTE    MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use
+timebuf         BYTE    MaxBuf DUP (?)      ; Uptime string buffer
 cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer
-membuf          DWORD   MaxBuf DUP (?)      ; Memory data buffer
-timebuf         DWORD   MaxBuf DUP (?)      ; Uptime string buffer
+membuf          BYTE    MaxBuf DUP (?)      ; Memory data buffer
+logicaldrives   BYTE    MaxBuf DUP (?)      ; Logical disk drive letters buffer
+currentdrive    BYTE    MaxBuf DUP (?)      ; Current disk drive letter buffer
+disktotalbytes  QWORD   ?                   ; Drive total bytes buffer
+diskfreebytes   QWORD   ?                   ; Drive free bytes buffer
+
 ; Header strings:
 header_line     BYTE    "----------------------------------------", 0Dh, 0Ah
 header_proc     BYTE    0Dh, 0Ah, "Processor", 0Dh, 0Ah
@@ -151,9 +154,9 @@ mem_avail       BYTE    "Available    : "
 mem_load        BYTE    "Load         : "
 gibi_whole      QWORD   ?                   ; Store whole portion of RAM size
 gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size
-gib_label       BYTE    " GiB"
-decimal_pt      BYTE    "."
-percent_sn      BYTE    "%"
+; Disk strings:
+disk_total      BYTE    "Total        : "
+disk_avail      BYTE    "Available    : "
 ; Operating system strings:
 os_version      BYTE    "Version      : "
 os_edition      BYTE    "Edition      : "
@@ -193,6 +196,15 @@ seconds_label   BYTE    " seconds"
 second_label    BYTE    " second"
 ; Formatting and utility:
 unknown         BYTE    "unknown"
+not_avail       BYTE    "Not available"
+kib_label       BYTE    " KiB"
+mib_label       BYTE    " MiB"
+gib_label       BYTE    " GiB"
+decimal_pt      BYTE    "."
+percent_sn      BYTE    "%"
+space           BYTE    " "
+l_paren         BYTE    "("
+r_paren         BYTE    ")"
 newln           BYTE    0Dh, 0Ah            ; CRLF
 dblsp           BYTE    0Dh, 0Ah, 0Ah       ; CRLFLF
 stdout          QWORD   ?                   ; Handle to standard output device
@@ -233,12 +245,16 @@ start   PROC                                ; Program entry procedure / start
 
         StrOut  os_build, LENGTHOF os_build
         call    GetWinBuild
-        lea     rdi, tmpbuf + MaxBuf
+        mov     rcx, rax
+        lea     rdx, tmpbuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  decimal_pt, LENGTHOF decimal_pt
         call    GetWinUBR
-        lea     rdi, tmpbuf + MaxBuf
+        mov     rcx, rax
+        lea     rdx, tmpbuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  newln, LENGTHOF newln
@@ -269,7 +285,9 @@ start   PROC                                ; Program entry procedure / start
 
         StrOut  cpu_cores, LENGTHOF cpu_cores
         call    GetCpuCores
-        lea     rdi, cpubuf + MaxBuf
+        mov     rcx, rax
+        lea     rdx, cpubuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  newln, LENGTHOF newln
@@ -287,40 +305,61 @@ start   PROC                                ; Program entry procedure / start
         call    GetMemory
         mov     r12, rdx                    ; Save free memory QWORD for later use
         mov     r13d, r8d                   ; Save memory load DWORD for later use
+        mov     rcx, rax                    ; Move return value from GetMemory into RCX for Byte2GiB
+        lea     rdx, gibi_whole             ; Pointer to buffer to store whole portion of GiB
+        lea     r8, gibi_fract              ; Pointer to buffer to store decimal portion of GiB
         call    Byte2GiB
         mov     rax, [gibi_whole]
-        lea     rdi, membuf + MaxBuf
+        mov     rcx, rax
+        lea     rdx, membuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  decimal_pt, LENGTHOF decimal_pt
         mov     rax, [gibi_fract]
-        lea     rdi, membuf + MaxBuf
+        mov     rcx, rax
+        lea     rdx, membuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  gib_label, LENGTHOF gib_label
         StrOut  newln, LENGTHOF newln
 
         StrOut  mem_avail, LENGTHOF mem_avail
-        mov     rax, r12                    ; Load free memory QWORD
+        mov     rcx, r12                    ; Load previously saved free memory QWORD
+        lea     rdx, gibi_whole
+        lea     r8, gibi_fract
         call    Byte2GiB
         mov     rax, [gibi_whole]
-        lea     rdi, membuf + MaxBuf
+        mov     rcx, rax
+        lea     rdx, membuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  decimal_pt, LENGTHOF decimal_pt
         mov     rax, [gibi_fract]
-        lea     rdi, membuf + MaxBuf
+        mov     rcx, rax
+        lea     rdx, membuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  gib_label, LENGTHOF gib_label
         StrOut  newln, LENGTHOF newln
 
         StrOut  mem_load, LENGTHOF mem_load
-        mov     eax, r13d                   ; Load memory load DWORD
+        mov     ecx, r13d                   ; Load memory load DWORD
         call    Int2Str
         StrOut  rax, r8d
         StrOut  percent_sn, LENGTHOF percent_sn
-        StrOut  dblsp, LENGTHOF dblsp
+        StrOut  newln, LENGTHOF newln
+
+        ; Disks section:
+        StrOut  header_disks, LENGTHOF header_disks
+        StrOut  header_line, LENGTHOF header_line
+        call    PrintDisks
+
+       ;StrOut  dblsp, LENGTHOF dblsp
+        StrOut  newln, LENGTHOF newln
 
         xor     ecx, ecx
         call    ExitProcess
@@ -330,16 +369,30 @@ start   ENDP
 ; Utility Functions
 ;=========================================
 
-; Convert integer in RAX to ASCII string in buffer pointed to by RDI; digits are stored in reverse order.
+; Converts an integer to ASCII string. Digits are stored in reverse order in buffer pointed to by RDI.
+; Returns: RAX = pointer to string
+;          R8D = number of chars written
+;
+; Input:   RCX = integer to convert
+;          RDX = pointer to buffer
+;          R8  = buffer size
 Int2Str PROC
-        push    rbx                         ; Preserve RBX register
+        push    rdi                         ; Preserve RDI register
 
-        mov     rbx, 10                     ; Divisor (10)
+        mov     rax, rcx                    ; Move integer into RAX for division
+        mov     rdi, rdx                    ; RDI points to buffer
+        add     rdi, r8                     ; RDI now points to the end of the buffer
+
+        mov     r10, 10                     ; Divisor (10)
+        mov     r9d, r8d                    ; Save buffer size
         xor     r8d, r8d                    ; Initial string length = 0
 
 @loop:
+        cmp     r8d, r9d                    ; Is the buffer full?
+        je      @done
+
         xor     rdx, rdx                    ; Clear RDX for division
-        div     rbx                         ; RAX = quotient, RDX = remainder
+        div     r10                         ; RAX = quotient, RDX = remainder
         add     dl, '0'                     ; Remainder to ASCII digit
         dec     rdi
         mov     [rdi], dl                   ; Store digit
@@ -347,29 +400,38 @@ Int2Str PROC
         test    rax, rax
         jnz     @loop
 
+@done:
         mov     rax, rdi                    ; Return pointer to first digit
-
-        pop     rbx                         ; Restore RBX
+        pop     rdi                         ; Restore RDI
         ret
 Int2Str ENDP
 
-; Convert bytes in RAX to GiB; store whole and fractional parts in gibi_whole and gibi_fract.
+; Convert bytes in RCX to GiB.
+; Returns: store whole and fractional parts of GiB in specified buffers
+;
+; Input:   RCX = bytes
+;          RDX = pointer to buffer to store whole portion of GiB (XX.xx)
+;          R8  = pointer to buffer to store decimal portion of GiB (xx.XX)
+
 Byte2GiB PROC
-        ; RAX = bytes
+        mov     rax, rcx                    ; Bytes
+        mov     r9, rdx                     ; Pointer to buffer for quotient
+                                            ; R8 already points to buffer for remainder
+
         xor     rdx, rdx
-        mov     r8, BytesPerGib             ; R8 = 1 GiB in bytes
-        div     r8                          ; RAX = RAX/R8, RDX = remainder
+        mov     r10, 1024 * 1024 * 1024     ; R10 = 1 GiB in bytes
+        div     r10                         ; RAX = RAX/R10, RDX = remainder
 
         ; RAX = whole portion of result, RDX = fractional portion of result
-        mov     [gibi_whole], rax           ; Store whole portion
+        mov     [r9], rax                   ; Store whole portion in buffer pointed to by r9
 
         ; Scale remainder to 2 decimal digits: (remainder * 100) / GiB
         mov     rax, rdx                    ; Move remainder into RAX
-        mov     r8, 100
-        mul     r8                          ; Multiply by 100 to convert fractional GiB into a 2-digit integer (shift decimal right)
-        mov     r8, BytesPerGib
-        div     r8                          ; (remainder * 100) / GiB
-        mov     [gibi_fract], rax           ; Store fractional portion
+        mov     r10, 100
+        mul     r10                         ; Multiply by 100 to convert fractional GiB into a 2-digit integer (shift decimal right)
+        mov     r10, 1024 * 1024 * 1024
+        div     r10                         ; (remainder * 100) / GiB
+        mov     [r8], rax                   ; Store fractional portion in buffer pointed to by r8
 
         ret
 Byte2GiB ENDP
@@ -378,27 +440,27 @@ Byte2GiB ENDP
 ConvertToDHMS PROC
         ; RAX = uptime milliseconds
         xor     rdx, rdx                    ; Clear RDX for division
-        mov     r8, MsPerSecond             ; Divisor in R8 = milliseconds per second
+        mov     r8, 1000                    ; Divisor in R8 = milliseconds per second (1000)
         div     r8                          ; RAX = seconds
 
         ; Seconds can now be divided out into Days, Hours, Minutes
         ; Days:
         xor     rdx, rdx
-        mov     r8, SecPerDay
+        mov     r8, 86400                   ; Seconds per day
         div     r8                          ; RAX = days, RDX = remaining seconds
         mov     [days], rax                 ; Store result
         mov     rax, rdx                    ; Carry remainder forward
 
         ; Hours:
         xor     rdx, rdx
-        mov     r8, SecPerHour
+        mov     r8, 3600                    ; Seconds per hour
         div     r8
         mov     [hours], rax
         mov     rax, rdx
 
         ; Minutes
         xor     rdx, rdx
-        mov     r8, SecPerMinute
+        mov     r8, 60                      ; Seconds per minute
         div     r8
         mov     [minutes], rax
         mov     rax, rdx
@@ -642,14 +704,18 @@ PrintFormatUptime PROC
         cmp     rax, 1                      ; Days = 1?
         je      single_day                  ; Yes, jump
 
-        lea     rdi, timebuf + MaxBuf       ; No, continue with plural
+        mov     rcx, rax                    ; No, continue with plural
+        lea     rdx, timebuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  days_label, LENGTHOF days_label
         jmp     days_done
 
 single_day:
-        lea     rdi, timebuf + MaxBuf
+        mov     rcx, rax
+        lea     rdx, timebuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  day_label, LENGTHOF day_label
@@ -672,14 +738,18 @@ hours_no_comma:
         cmp     rax, 1                      ; Hours = 1?
         je      single_hour                 ; Yes, jump
 
-        lea     rdi, timebuf + MaxBuf       ; No, continue with plural
+        mov     rcx, rax                    ; No, continue with plural
+        lea     rdx, timebuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  hours_label, LENGTHOF hours_label
         jmp     hours_done
 
 single_hour:
-        lea     rdi, timebuf + MaxBuf
+        mov     rcx, rax
+        lea     rdx, timebuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  hour_label, LENGTHOF hour_label
@@ -702,14 +772,18 @@ minutes_no_comma:
         cmp     rax, 1                      ; Minutes = 1?
         je      single_minute               ; Yes, jump
 
-        lea     rdi, timebuf + MaxBuf       ; No, continue with plural
+        mov     rcx, rax                    ; No, continue with plural
+        lea     rdx, timebuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  minutes_label, LENGTHOF minutes_label
         jmp     minutes_done
 
 single_minute:
-        lea     rdi, timebuf + MaxBuf
+        mov     rcx, rax
+        lea     rdx, timebuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  minute_label, LENGTHOF minute_label
@@ -732,14 +806,18 @@ seconds_no_comma:
         cmp     rax, 1                      ; Seconds = 1?
         je      single_second               ; Yes, jump
 
-        lea     rdi, timebuf + MaxBuf       ; No, continue with plural
+        mov     rcx, rax                    ; No, continue with plural
+        lea     rdx, timebuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  seconds_label, LENGTHOF seconds_label
         jmp     uptime_done
 
 single_second:
-        lea     rdi, timebuf + MaxBuf
+        mov     rcx, rax
+        lea     rdx, timebuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  second_label, LENGTHOF second_label
@@ -906,7 +984,7 @@ GetMemory PROC
         xor     rdx, rdx
         xor     r8, r8
 @done:
-        add     rsp ,40
+        add     rsp, 40
         ret
 GetMemory ENDP
 
@@ -914,13 +992,166 @@ GetMemory ENDP
 ; Disk / Storage Functions
 ;=========================================
 
-; Print disks size and usage data when called.
+; Print logical drives size and usage data when called.
 PrintDisks PROC
+        push    rbx
+        push    rsi
         push    rdi
+        sub     rsp, 32                     ; Shadow space
 
-        ;TO-DO: implement GetLogicalDriveStringsA and GetDiskFreeSpaceExA functions.
+        mov     rcx, LENGTHOF logicaldrives
+        lea     rdx, logicaldrives
+        call    GetLogicalDriveStringsA     ; Write drive letters to buffer; RAX = chars written
 
+        test    eax, eax
+        jz      @done
+
+        cmp     rax, LENGTHOF logicaldrives ; Check if logical drives string is larger than the buffer
+        ja      @done                       ; The string wont fit, jump to done
+
+        mov     rbx, rax                    ; RBX = number of characters written by GetLocalDriveStringA
+        lea     rsi, logicaldrives
+@loop:
+        xor     r8d, r8d                    ; R8D = track length of drive path
+        test    rbx, rbx
+        jz      @done
+        lea     rdi, currentdrive
+@@:
+        mov     al, [rsi]
+        cmp     al, 0
+        jz      @f
+        mov     [rdi], al
+        inc     rsi
+        inc     rdi
+        inc     r8d
+        dec     rbx
+        jmp     @b
+@@:
+        StrOut  currentdrive, r8d
+        StrOut  newln, LENGTHOF newln
+
+        lea     rcx, currentdrive
+        mov     rdx, 0
+        lea     r8, disktotalbytes
+        lea     r9, diskfreebytes
+        call    GetDiskFreeSpaceExA         ; Write total and free bytes for current drive into buffers
+
+        test    eax, eax
+        jz      @fail
+
+        StrOut  disk_total, LENGTHOF disk_total
+
+        mov     rcx, [disktotalbytes]
+        mov     r10, GIBIBYTE
+        cmp     rcx, r10
+        jae     @gib_t
+        mov     r10, MEBIBYTE
+        cmp     rcx, r10
+        jae     @mib_t
+        mov     r10, KIBIBYTE
+        cmp     rcx, r10
+        jae     @kib_t
+        jmp     @bytes_t
+
+@gib_t:
+        shr     rcx, 30
+        lea     rdx, tmpbuf
+        mov     r8, MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  gib_label, LENGTHOF gib_label
+        jmp     @available
+@mib_t:
+        shr     rcx, 20
+        lea     rdx, tmpbuf
+        mov     r8, MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  mib_label, LENGTHOF mib_label
+        jmp     @available
+@kib_t:
+        shr     rcx, 10
+        lea     rdx, tmpbuf
+        mov     r8, MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  kib_label, LENGTHOF kib_label
+        jmp     @available
+@bytes_t:
+        mov     rcx, [disktotalbytes]
+        lea     rdx, tmpbuf
+        mov     r8, MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+
+@available:
+        StrOut  newln, LENGTHOF newln
+        StrOut  disk_avail, LENGTHOF disk_avail
+
+        mov     rcx, [diskfreebytes]
+        mov     r10, GIBIBYTE
+        cmp     rcx, r10
+        jae     @gib_f
+        mov     r10, MEBIBYTE
+        cmp     rcx, r10
+        jae     @mib_f
+        mov     r10, KIBIBYTE
+        cmp     rcx, r10
+        jae     @kib_f
+        jmp     @bytes_f
+
+@gib_f:
+        shr     rcx, 30
+        lea     rdx, tmpbuf
+        mov     r8, MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  gib_label, LENGTHOF gib_label
+        jmp     @continue
+@mib_f:
+        shr     rcx, 20
+        lea     rdx, tmpbuf
+        mov     r8, MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  mib_label, LENGTHOF mib_label
+        jmp     @continue
+@kib_f:
+        shr     rcx, 10
+        lea     rdx, tmpbuf
+        mov     r8, MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+        StrOut  kib_label, LENGTHOF kib_label
+        jmp     @continue
+@bytes_f:
+        mov     rcx, [diskfreebytes]
+        lea     rdx, tmpbuf
+        mov     r8, MaxBuf
+        call    Int2Str
+        StrOut  rax, r8d
+
+@continue:
+        StrOut  newln, LENGTHOF newln
+
+        ; Defensive clear: currentdrive printed via r8d length, but guard against future code using LENGTHOF
+        mov     rcx, LENGTHOF currentdrive
+        lea     rdi, currentdrive
+        xor     al, al                      ; AL = 0
+        rep     stosb                       ; Write byte AL into tmpbuf RCX times
+
+        inc     rsi
+        dec     rbx
+        jmp     @loop
+
+@fail:                                      ; This may occur for unformatted disks where no size is available
+        StrOut  not_avail, LENGTHOF not_avail
+        jmp     @continue
+@done:
+        add     rsp, 32
         pop     rdi
+        pop     rsi
+        pop     rbx
         ret
 PrintDisks ENDP
 
