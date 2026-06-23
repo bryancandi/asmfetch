@@ -274,11 +274,13 @@ start   PROC                                ; Program entry procedure / start
         StrOut  header_line, LENGTHOF header_line
 
         StrOut  cpu_vendor, LENGTHOF cpu_vendor
+        lea     rcx, cpubuf
         call    GetCpuVend
         StrOut  rax, r8d
         StrOut  newln, LENGTHOF newln
 
         StrOut  cpu_name, LENGTHOF cpu_name
+        lea     rcx, cpubuf
         call    GetCpuBrand
         StrOut  rax, r8d
         StrOut  newln, LENGTHOF newln
@@ -348,6 +350,8 @@ start   PROC                                ; Program entry procedure / start
 
         StrOut  mem_load, LENGTHOF mem_load
         mov     ecx, r13d                   ; Load memory load DWORD
+        lea     rdx, membuf
+        mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  percent_sn, LENGTHOF percent_sn
@@ -878,32 +882,37 @@ is_ia64:
         ret
 GetCpuArch ENDP
 
-; Get CPU brand string and store it in 'cpubuf' buffer.
+; Get CPU brand string and store it in a buffer.
+; Returns: RAX = pointer to filled buffer
+;          R8D = length of data in buffer
+;
+; Input:   RCX = pointer to buffer
 GetCpuBrand PROC
         push    rbx
 
+        mov     r9, rcx                     ; Pointer to buffer
         mov     eax, 80000002h              ; 80000002h - 80000004h = processor brand string
         cpuid
-        mov     [cpubuf], eax
-        mov     [cpubuf + 4], ebx
-        mov     [cpubuf + 8], ecx
-        mov     [cpubuf + 12], edx
+        mov     [r9], eax
+        mov     [r9 + 4], ebx
+        mov     [r9 + 8], ecx
+        mov     [r9 + 12], edx
 
         mov     eax, 80000003h
         cpuid
-        mov     [cpubuf + 16], eax
-        mov     [cpubuf + 20], ebx
-        mov     [cpubuf + 24], ecx
-        mov     [cpubuf + 28], edx
+        mov     [r9 + 16], eax
+        mov     [r9 + 20], ebx
+        mov     [r9 + 24], ecx
+        mov     [r9 + 28], edx
 
         mov     eax, 80000004h
         cpuid
-        mov     [cpubuf + 32], eax
-        mov     [cpubuf + 36], ebx
-        mov     [cpubuf + 40], ecx
-        mov     [cpubuf + 44], edx
+        mov     [r9 + 32], eax
+        mov     [r9 + 36], ebx
+        mov     [r9 + 40], ecx
+        mov     [r9 + 44], edx
 
-        lea     rax, cpubuf                 ; RAX: point to buffer address
+        mov     rax, r9                     ; RAX = point to buffer address
         mov     r8d, 48                     ; Return length in R8D
 
         pop     rbx
@@ -940,17 +949,22 @@ cores_done:
         ret
 GetCpuCores ENDP
 
-; Get CPU vendor string and store it in 'cpubuf' buffer.
+; Get CPU vendor string and store it in a buffer.
+; Returns: RAX = pointer to filled buffer
+;          R8D = length of data in buffer
+;
+; Input:   RCX = pointer to buffer
 GetCpuVend PROC
         push    rbx
 
+        mov     r9, rcx                     ; Pointer to buffer
         mov     eax, 0                      ; CPUID leaf 0 = vendor
         cpuid                               ; CPUID instruction
-        mov     [cpubuf], ebx
-        mov     [cpubuf + 4], edx
-        mov     [cpubuf + 8], ecx
+        mov     [r9], ebx
+        mov     [r9 + 4], edx
+        mov     [r9 + 8], ecx
 
-        lea     rax, cpubuf                 ; RAX: point to buffer address
+        mov     rax, r9                     ; RAX = point to buffer address
         mov     r8d, 12                     ; Return length in R8D
 
         pop     rbx
