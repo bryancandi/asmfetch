@@ -884,36 +884,55 @@ GetCpuArch ENDP
 
 ; Get CPU brand string and store it in a buffer.
 ; Returns: RAX = pointer to filled buffer
-;          R8D = length of data in buffer
+;          R8  = length of printable data in buffer
 ;
 ; Input:   RCX = pointer to buffer
 GetCpuBrand PROC
         push    rbx
 
-        mov     r9, rcx                     ; Pointer to buffer
+        mov     r10, rcx                    ; Pointer to buffer
         mov     eax, 80000002h              ; 80000002h - 80000004h = processor brand string
         cpuid
-        mov     [r9], eax
-        mov     [r9 + 4], ebx
-        mov     [r9 + 8], ecx
-        mov     [r9 + 12], edx
+        mov     [r10], eax
+        mov     [r10 + 4], ebx
+        mov     [r10 + 8], ecx
+        mov     [r10 + 12], edx
 
         mov     eax, 80000003h
         cpuid
-        mov     [r9 + 16], eax
-        mov     [r9 + 20], ebx
-        mov     [r9 + 24], ecx
-        mov     [r9 + 28], edx
+        mov     [r10 + 16], eax
+        mov     [r10 + 20], ebx
+        mov     [r10 + 24], ecx
+        mov     [r10 + 28], edx
 
         mov     eax, 80000004h
         cpuid
-        mov     [r9 + 32], eax
-        mov     [r9 + 36], ebx
-        mov     [r9 + 40], ecx
-        mov     [r9 + 44], edx
+        mov     [r10 + 32], eax
+        mov     [r10 + 36], ebx
+        mov     [r10 + 40], ecx
+        mov     [r10 + 44], edx
 
-        mov     rax, r9                     ; RAX = point to buffer address
-        mov     r8d, 48                     ; Return length in R8D
+        xor     r9, r9                      ; R9 = whitespace counter
+@skipspace:
+        cmp     BYTE PTR [r10 + r9], ' '    ; Check for leading whitespaces
+        jne     @startfound
+        inc     r9
+        cmp     r9, 48                      ; Maximum length of cpuid brand string
+        jae     @startfound
+        jmp     @skipspace
+@startfound:
+        mov     r8, r9                      ; R8 = string start position
+@findnull:
+        cmp     BYTE PTR [r10 + r8], 0      ; Check for null terminator
+        je      @done
+        inc     r8
+        cmp     r8, 48                      ; Maximum length of cpuid brand string
+        jae     @done
+        jmp     @findnull
+@done:
+        add     r10, r9                     ; Advance buffer pointer past whitespaces counted
+        mov     rax, r10                    ; RAX = point to buffer address after whitespace (if present)
+        sub     r8, r9                      ; R8 = buffer length minus skipped whitespace length
 
         pop     rbx
         ret
