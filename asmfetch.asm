@@ -10,6 +10,7 @@
 ;============================================================================
 
 INCLUDELIB advapi32.lib                     ; Advanced Windows Base API
+INCLUDELIB iphlpapi.lib                     ; Windows Networking API
 INCLUDELIB kernel32.lib                     ; User-mode Windows Kernel API
 INCLUDELIB ntdll.lib                        ; Windows Native API
 
@@ -20,6 +21,9 @@ INCLUDELIB ntdll.lib                        ; Windows Native API
 
 ; --- System ---
 ExitProcess             PROTO uExitCode:DWORD
+GetProcessHeap          PROTO
+HeapAlloc               PROTO hHeap:QWORD, dwFlags:DWORD, dwBytes:QWORD
+HeapFree                PROTO hHeap:QWORD, dwFlags:DWORD, lpMem:PTR
 RegGetValueA            PROTO hkey:QWORD, lpSubKey:PTR BYTE, lpValue:PTR BYTE, dwFlags:DWORD, pdwType:PTR DWORD, pvData:PTR, pcbData:PTR DWORD
 
 ; --- Console I/O ---
@@ -27,6 +31,7 @@ GetStdHandle            PROTO nStdHandle:DWORD
 WriteConsoleA           PROTO hConsoleOutput:QWORD, lpBuffer:PTR, nNumberOfCharsToWrite:DWORD, lpNumberOfCharsWritten:PTR DWORD, lpReserved:PTR
 
 ; --- System Information ---
+GetAdaptersInfo         PROTO AdapterInfo:QWORD, SizePointer:QWORD
 GetComputerNameA        PROTO lpBuffer:PTR BYTE, nSize:PTR DWORD
 GetDiskFreeSpaceExA     PROTO lpDirectoryName:PTR BYTE, lpFreeBytesAvailableToCaller:PTR QWORD, lpTotalNumberOfBytes:PTR QWORD, lpTotalNumberOfFreeBytes:PTR QWORD
 GetLogicalDriveStringsA PROTO nBufferLength:DWORD, lpBuffer:PTR BYTE
@@ -40,13 +45,16 @@ RtlGetVersion           PROTO lpVersionInformation:PTR RTL_OSVERSIONINFOEXW
 ; Constants
 ;----------------------------------------------------------------------------
 
-STD_OUTPUT_HANDLE   EQU -11
-MaxBuf              EQU 256
-HKEY_LOCAL_MACHINE  EQU 80000002h
-RRF_RT_REG_DWORD    EQU 10h
-KIBIBYTE            EQU 1024
-MEBIBYTE            EQU 1024 * 1024
-GIBIBYTE            EQU 1024 * 1024 * 1024
+STD_OUTPUT_HANDLE               EQU -11
+MaxBuf                          EQU 256
+HKEY_LOCAL_MACHINE              EQU 80000002h
+RRF_RT_REG_DWORD                EQU 10h
+KIBIBYTE                        EQU 1024
+MEBIBYTE                        EQU 1024 * 1024
+GIBIBYTE                        EQU 1024 * 1024 * 1024
+MAX_ADAPTER_ADDRESS_LENGTH      EQU 8
+MAX_ADAPTER_DESCRIPTION_LENGTH  EQU 128
+MAX_ADAPTER_NAME_LENGTH         EQU 256
 
 ;----------------------------------------------------------------------------
 ; Macros
@@ -113,6 +121,41 @@ RTL_OSVERSIONINFOEXW STRUCT
     wReserved                   WORD    ?
 RTL_OSVERSIONINFOEXW ENDS
 
+; Structures used by GetAdaptersInfo; contains information about a particular network adapter.
+; PIP_ADDR_STRING: Pointer to an IP_ADDR_STRING structure
+PIP_ADDR_STRING TYPEDEF PTR IP_ADDR_STRING
+
+IP_ADDR_STRING STRUCT
+    Next                        PIP_ADDR_STRING ? ; Pointer to next IP_ADDR_STRING struct
+    IpAddress                   BYTE 16 DUP (?)   ; char array
+    IpMask                      BYTE 16 DUP (?)   ; char array
+    Context                     DWORD ?           ; DWORD
+IP_ADDR_STRING ENDS
+
+; PIP_ADAPTER_INFO: Pointer to an IP_ADAPTER_INFO structure
+PIP_ADAPTER_INFO TYPEDEF PTR IP_ADAPTER_INFO
+
+IP_ADAPTER_INFO STRUCT
+    Next                        PIP_ADAPTER_INFO ? ; Pointer to next IP_ADAPTER_INFO structure
+    ComboIndex                  DWORD ?            ; DWORD
+    AdapterName                 BYTE  MAX_ADAPTER_NAME_LENGTH + 4 DUP (?) ; char array
+    Description                 BYTE  MAX_ADAPTER_DESCRIPTION_LENGTH + 4 DUP (?) ; char array
+    AddressLength               DWORD ?            ; UINT
+    Address                     BYTE  MAX_ADAPTER_ADDRESS_LENGTH DUP (?) ; BYTE
+    Index                       DWORD ?            ; DWORD
+    dwType                      DWORD ?            ; UINT (renamed from 'Type' due to ml64 syntax error)
+    DhcpEnabled                 DWORD ?            ; UINT
+    CurrentIpAddress            PIP_ADDR_STRING ?  ; PIP_ADDR_STRING
+    IpAddressList               IP_ADDR_STRING <>  ; Linked list of IP_ADDR_STRING structures
+    GatewayList                 IP_ADDR_STRING <>  ; Linked list of IP_ADDR_STRING structures
+    DhcpServer                  IP_ADDR_STRING <>  ; Linked list of IP_ADDR_STRING structures
+    HaveWins                    DWORD ?            ; BOOL
+    PrimaryWinsServer           IP_ADDR_STRING <>  ; Linked list of IP_ADDR_STRING structures
+    SecondaryWinsServer         IP_ADDR_STRING <>  ; Linked list of IP_ADDR_STRING structures
+    LeaseObtained               QWORD ?            ; time_t (64-bit)
+    LeaseExpires                QWORD ?            ; time_t (64-bit)
+IP_ADAPTER_INFO ENDS
+
 ;----------------------------------------------------------------------------
 ; Data Segment
 ;----------------------------------------------------------------------------
@@ -122,6 +165,9 @@ RTL_OSVERSIONINFOEXW ENDS
 sysInf          SYSTEM_INFO <>
 msEx            MEMORYSTATUSEX <>
 osEx            RTL_OSVERSIONINFOEXW <>
+; Buffers for GetAdaptersInfo
+pAdapterInfo    PIP_ADAPTER_INFO ?
+pAdapterSize    QWORD   ?
 ; Output buffers:
 tmpbuf          BYTE    MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use
 timebuf         BYTE    MaxBuf DUP (?)      ; Uptime string buffer
@@ -138,6 +184,7 @@ header_proc     BYTE    0Dh, 0Ah, "Processor", 0Dh, 0Ah
 header_mem      BYTE    0Dh, 0Ah, "Memory", 0Dh, 0Ah
 header_os       BYTE    0Dh, 0Ah, "Operating System", 0Dh, 0Ah
 header_disks    BYTE    0Dh, 0Ah, "Disks", 0Dh, 0Ah
+header_network  BYTE    0Dh, 0Ah, "Network", 0Dh, 0Ah
 ; Processor strings:
 cpu_vendor      BYTE    "Vendor       : "
 cpu_name        BYTE    "Model        : "
@@ -207,6 +254,7 @@ l_paren         BYTE    "("
 r_paren         BYTE    ")"
 newln           BYTE    0Dh, 0Ah            ; CRLF
 dblsp           BYTE    0Dh, 0Ah, 0Ah       ; CRLFLF
+hheap           QWORD   ?                   ; Heap handle from HeapAlloc
 stdout          QWORD   ?                   ; Handle to standard output device
 nbwr            DWORD   ?                   ; Number of bytes (characters) actually written
 nbrd            DWORD   ?                   ; Number of bytes (characters) actually read
@@ -361,6 +409,11 @@ start   PROC                                ; Program entry procedure / start
         StrOut  header_disks, LENGTHOF header_disks
         StrOut  header_line, LENGTHOF header_line
         call    PrintDisks
+
+        ; Network section:
+        StrOut  header_network, LENGTHOF header_network
+        StrOut  header_line, LENGTHOF header_line
+        call    GetNetworkInfo
 
        ;StrOut  dblsp, LENGTHOF dblsp
         StrOut  newln, LENGTHOF newln
@@ -1187,5 +1240,25 @@ PrintDisks PROC
         pop     rbx
         ret
 PrintDisks ENDP
+
+;=========================================
+; Network Functions
+;=========================================
+
+GetNetworkInfo PROC
+        sub     rsp, 40                     ; Shadow space
+
+        ; TO-DO: implement HeapAlloc and HeapFree
+
+        call    GetProcessHeap
+        mov     [hheap], rax                ; Store handle for current process heap
+
+        lea     rcx, pAdapterInfo           ; Pointer to a buffer that receives a linked list of IP_ADAPTER_INFO structures
+        lea     rdx, pAdapterSize           ; Initial call will fail and return necessary buffer size
+        call    GetAdaptersInfo             ; pAdapterSize now contains required buffer size to pass to HeapAlloc
+
+        add     rsp, 40
+        ret
+GetNetworkInfo ENDP
 
         END
