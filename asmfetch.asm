@@ -254,10 +254,12 @@ l_paren         BYTE    "("
 r_paren         BYTE    ")"
 newln           BYTE    0Dh, 0Ah            ; CRLF
 dblsp           BYTE    0Dh, 0Ah, 0Ah       ; CRLFLF
-hheap           QWORD   ?                   ; Heap handle from HeapAlloc
 stdout          QWORD   ?                   ; Handle to standard output device
 nbwr            DWORD   ?                   ; Number of bytes (characters) actually written
 nbrd            DWORD   ?                   ; Number of bytes (characters) actually read
+; Heap:
+hHeap           QWORD   ?                   ; Heap handle from GetProcessHeap
+pMemBlk         QWORD   ?                   ; Pointer to allocated memory block from HeapAlloc
 ; Registry:
 ubrSubKey       BYTE    "SOFTWARE\Microsoft\Windows NT\CurrentVersion", 0
 ubrValName      BYTE    "UBR", 0
@@ -413,7 +415,7 @@ start   PROC                                ; Program entry procedure / start
         ; Network section:
         StrOut  header_network, LENGTHOF header_network
         StrOut  header_line, LENGTHOF header_line
-        call    GetNetworkInfo
+        call    PrintNetworkAdapters
 
        ;StrOut  dblsp, LENGTHOF dblsp
         StrOut  newln, LENGTHOF newln
@@ -1245,13 +1247,16 @@ PrintDisks ENDP
 ; Network Functions
 ;=========================================
 
-GetNetworkInfo PROC
+PrintNetworkAdapters PROC
         sub     rsp, 40                     ; Shadow space
 
-        ; TO-DO: implement HeapAlloc and HeapFree
+        ; TO-DO:
+        ;   - implement HeapAlloc and HeapFree
+        ;   - implement second call to GetAdaptersInfo
+        ;   - iterate linked lists and print network adapter data
 
         call    GetProcessHeap
-        mov     [hheap], rax                ; Store handle for current process heap
+        mov     [hHeap], rax                ; Store handle for current process heap
 
         lea     rcx, pAdapterInfo           ; Pointer to a buffer that receives a linked list of IP_ADAPTER_INFO structures
         lea     rdx, pAdapterSize           ; Initial call will fail and return necessary buffer size
@@ -1259,6 +1264,6 @@ GetNetworkInfo PROC
 
         add     rsp, 40
         ret
-GetNetworkInfo ENDP
+PrintNetworkAdapters ENDP
 
         END
