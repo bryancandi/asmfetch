@@ -165,9 +165,10 @@ IP_ADAPTER_INFO ENDS
 sysInf          SYSTEM_INFO <>
 msEx            MEMORYSTATUSEX <>
 osEx            RTL_OSVERSIONINFOEXW <>
-; Buffers for GetAdaptersInfo
-pAdapterInfo    PIP_ADAPTER_INFO ?
-pAdapterSize    QWORD   ?
+
+; Size buffer for GetAdaptersInfo
+pAdapterSize    QWORD   0
+
 ; Output buffers:
 tmpbuf          BYTE    MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use
 timebuf         BYTE    MaxBuf DUP (?)      ; Uptime string buffer
@@ -185,6 +186,7 @@ header_mem      BYTE    0Dh, 0Ah, "Memory", 0Dh, 0Ah
 header_os       BYTE    0Dh, 0Ah, "Operating System", 0Dh, 0Ah
 header_disks    BYTE    0Dh, 0Ah, "Disks", 0Dh, 0Ah
 header_network  BYTE    0Dh, 0Ah, "Network", 0Dh, 0Ah
+
 ; Processor strings:
 cpu_vendor      BYTE    "Vendor       : "
 cpu_name        BYTE    "Model        : "
@@ -195,15 +197,18 @@ cpu_x64         BYTE    "x86_64"
 cpu_arm         BYTE    "ARM"
 cpu_arm64       BYTE    "ARM64"
 cpu_ia64        BYTE    "Intel Itanium"
+
 ; Memory strings:
 mem_total       BYTE    "Total        : "
 mem_avail       BYTE    "Available    : "
 mem_load        BYTE    "Load         : "
 gibi_whole      QWORD   ?                   ; Store whole portion of RAM size
 gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size
+
 ; Disk strings:
 disk_total      BYTE    "Total        : "
 disk_avail      BYTE    "Available    : "
+
 ; Operating system strings:
 os_version      BYTE    "Version      : "
 os_edition      BYTE    "Edition      : "
@@ -226,6 +231,7 @@ productType     DWORD   ?                   ; Store return value from GetProduct
 comp_name       BYTE    "Hostname     : "
 compNameBuf     BYTE    MaxBuf DUP (0)
 compNameSize    DWORD   MaxBuf
+
 ; Uptime strings:
 uptime          BYTE    "Uptime       : "
 comma_sp        BYTE    ", "
@@ -241,8 +247,10 @@ minute_label    BYTE    " minute"
 seconds         QWORD   ?                   ; Uptime seconds value
 seconds_label   BYTE    " seconds"
 second_label    BYTE    " second"
+
 ; Formatting and utility:
 unknown         BYTE    "unknown"
+error_msg       BYTE    "error"
 not_avail       BYTE    "Not available"
 kib_label       BYTE    " KiB"
 mib_label       BYTE    " MiB"
@@ -257,9 +265,11 @@ dblsp           BYTE    0Dh, 0Ah, 0Ah       ; CRLFLF
 stdout          QWORD   ?                   ; Handle to standard output device
 nbwr            DWORD   ?                   ; Number of bytes (characters) actually written
 nbrd            DWORD   ?                   ; Number of bytes (characters) actually read
+
 ; Heap:
 hHeap           QWORD   ?                   ; Heap handle from GetProcessHeap
-pMemBlk         QWORD   ?                   ; Pointer to allocated memory block from HeapAlloc
+pAdapterMemory  QWORD   ?                   ; Pointer to allocated memory block from HeapAlloc for GetNetworkAdapters
+
 ; Registry:
 ubrSubKey       BYTE    "SOFTWARE\Microsoft\Windows NT\CurrentVersion", 0
 ubrValName      BYTE    "UBR", 0
@@ -415,8 +425,18 @@ start   PROC                                ; Program entry procedure / start
         ; Network section:
         StrOut  header_network, LENGTHOF header_network
         StrOut  header_line, LENGTHOF header_line
+        call    GetNetworkAdapters
+        test    eax, eax
+        jz      @skip_network_print         ; GetNetworkAdapters failed
+
         call    PrintNetworkAdapters
 
+        mov     rcx, [hHeap]
+        mov     rdx, 0
+        mov     r8, [pAdapterMemory]
+        call    HeapFree                    ; Free memory allocated by GetNetworkAdapters
+
+@skip_network_print:
        ;StrOut  dblsp, LENGTHOF dblsp
         StrOut  newln, LENGTHOF newln
 
@@ -1247,20 +1267,60 @@ PrintDisks ENDP
 ; Network Functions
 ;=========================================
 
-PrintNetworkAdapters PROC
+; Allocate memory and populate network adapter structure
+GetNetworkAdapters PROC
         sub     rsp, 40                     ; Shadow space
-
-        ; TO-DO:
-        ;   - implement HeapAlloc and HeapFree
-        ;   - implement second call to GetAdaptersInfo
-        ;   - iterate linked lists and print network adapter data
 
         call    GetProcessHeap
         mov     [hHeap], rax                ; Store handle for current process heap
 
-        lea     rcx, pAdapterInfo           ; Pointer to a buffer that receives a linked list of IP_ADAPTER_INFO structures
+        xor     rcx, rcx                    ; Null pointer for first call
         lea     rdx, pAdapterSize           ; Initial call will fail and return necessary buffer size
         call    GetAdaptersInfo             ; pAdapterSize now contains required buffer size to pass to HeapAlloc
+
+        mov     rcx, [hHeap]
+        mov     rdx, 0
+        mov     r8, [pAdapterSize]
+        call    HeapAlloc                   ; Allocate memory on heap for GetAdaptersInfo; free later from caller
+        test    rax, rax
+        jz      @fail
+        mov     [pAdapterMemory], rax              ; Store pointer to the allocated memory block
+
+        mov     rcx, [pAdapterMemory]
+        lea     rdx, pAdapterSize
+        call    GetAdaptersInfo
+        test    eax, eax
+        jnz     @fail
+        mov     eax, 1                      ; Signal success
+        jmp     @done
+
+@fail:
+        xor     eax, eax
+@done:
+        add     rsp, 40
+        ret
+GetNetworkAdapters ENDP
+
+; Print network adapter information from structure
+PrintNetworkAdapters PROC
+        sub     rsp, 40                     ; Shadow space
+
+        ; TO-DO:
+        ;   - Iterate linked list of adapters and print name and IP address
+
+        ; Test output (print first adapter info only):
+
+        ; RAX = address of the IP_ADAPTER_INFO structure
+        mov     rax, [pAdapterMemory]
+        lea     rax, [rax].IP_ADAPTER_INFO.Description
+        StrOut  rax, MAX_ADAPTER_DESCRIPTION_LENGTH + 4
+
+        StrOut  newln, LENGTHOF newln
+
+        mov     rax, [pAdapterMemory]
+        lea     rax, [rax].IP_ADAPTER_INFO.IpAddressList
+        lea     rax, [rax].IP_ADDR_STRING.IpAddress
+        StrOut  rax, 16
 
         add     rsp, 40
         ret
