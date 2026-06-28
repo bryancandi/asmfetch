@@ -125,7 +125,7 @@ RTL_OSVERSIONINFOEXW ENDS
 ; PIP_ADDR_STRING: Pointer to an IP_ADDR_STRING structure
 PIP_ADDR_STRING TYPEDEF PTR IP_ADDR_STRING
 
-IP_ADDR_STRING STRUCT
+IP_ADDR_STRING STRUCT 8
     Next                        PIP_ADDR_STRING ? ; Pointer to next IP_ADDR_STRING struct
     IpAddress                   BYTE 16 DUP (?)   ; char array
     IpMask                      BYTE 16 DUP (?)   ; char array
@@ -135,7 +135,7 @@ IP_ADDR_STRING ENDS
 ; PIP_ADAPTER_INFO: Pointer to an IP_ADAPTER_INFO structure
 PIP_ADAPTER_INFO TYPEDEF PTR IP_ADAPTER_INFO
 
-IP_ADAPTER_INFO STRUCT
+IP_ADAPTER_INFO STRUCT 8
     Next                        PIP_ADAPTER_INFO ? ; Pointer to next IP_ADAPTER_INFO structure
     ComboIndex                  DWORD ?            ; DWORD
     AdapterName                 BYTE  MAX_ADAPTER_NAME_LENGTH + 4 DUP (?) ; char array
@@ -1267,24 +1267,24 @@ PrintDisks ENDP
 ; Network Functions
 ;=========================================
 
-; Allocate memory and populate network adapter structure
+; Allocate memory and populate network adapter structure.
 GetNetworkAdapters PROC
         sub     rsp, 40                     ; Shadow space
 
         call    GetProcessHeap
         mov     [hHeap], rax                ; Store handle for current process heap
 
-        xor     rcx, rcx                    ; Null pointer for first call
+        xor     rcx, rcx                    ; Null buffer pointer for initial call
         lea     rdx, pAdapterSize           ; Initial call will fail and return necessary buffer size
         call    GetAdaptersInfo             ; pAdapterSize now contains required buffer size to pass to HeapAlloc
 
         mov     rcx, [hHeap]
         mov     rdx, 0
         mov     r8, [pAdapterSize]
-        call    HeapAlloc                   ; Allocate memory on heap for GetAdaptersInfo; free later from caller
+        call    HeapAlloc                   ; Allocate memory on heap for GetAdaptersInfo; must be freed by caller
         test    rax, rax
-        jz      @fail
-        mov     [pAdapterMemory], rax              ; Store pointer to the allocated memory block
+        jz      @fail                       ; HeapAlloc failed
+        mov     [pAdapterMemory], rax       ; Store pointer to the allocated memory block
 
         mov     rcx, [pAdapterMemory]
         lea     rdx, pAdapterSize
@@ -1301,28 +1301,45 @@ GetNetworkAdapters PROC
         ret
 GetNetworkAdapters ENDP
 
-; Print network adapter information from structure
+; Print network adapter information from structure.
 PrintNetworkAdapters PROC
-        sub     rsp, 40                     ; Shadow space
+        push    rbx
+        sub     rsp, 32                     ; Shadow space
 
-        ; TO-DO:
-        ;   - Iterate linked list of adapters and print name and IP address
+        mov     rax, [pAdapterMemory]       ; RAX = address of the IP_ADAPTER_INFO structure
+        test    rax, rax                    ; Ensure pAdapterMemory is not null
+        jz      @done
+        mov     rbx, rax                    ; RBX = first node
+@print_loop:
+        mov     rax, rbx
+        lea     rax, [rax].IP_ADAPTER_INFO.IpAddressList
+        lea     rax, [rax].IP_ADDR_STRING.IpAddress
 
-        ; Test output (print first adapter info only):
+        mov     cl, [rax]
+        cmp     cl, '0'                     ; Check if IP starts with 0; if yes, skip adapter
+        je      @next_adapter
 
-        ; RAX = address of the IP_ADAPTER_INFO structure
-        mov     rax, [pAdapterMemory]
+        mov     rax, rbx
         lea     rax, [rax].IP_ADAPTER_INFO.Description
         StrOut  rax, MAX_ADAPTER_DESCRIPTION_LENGTH + 4
-
         StrOut  newln, LENGTHOF newln
 
-        mov     rax, [pAdapterMemory]
+        mov     rax, rbx
         lea     rax, [rax].IP_ADAPTER_INFO.IpAddressList
         lea     rax, [rax].IP_ADDR_STRING.IpAddress
         StrOut  rax, 16
+        StrOut  newln, LENGTHOF newln
 
-        add     rsp, 40
+@next_adapter:
+        mov     rax, [rbx].IP_ADAPTER_INFO.Next
+        test    rax, rax                    ; Is there is another adapter to print?
+        jz      @done
+        mov     rbx, rax                    ; RBX = next node
+        jmp     @print_loop
+
+@done:
+        add     rsp, 32
+        pop     rbx
         ret
 PrintNetworkAdapters ENDP
 
