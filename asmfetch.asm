@@ -19,18 +19,18 @@ INCLUDELIB ntdll.lib                        ; Windows Native API
 ; x64 args in: RCX, RDX, R8, R9, stack
 ;----------------------------------------------------------------------------
 
-; --- System ---
+; System
 ExitProcess             PROTO uExitCode:DWORD
 GetProcessHeap          PROTO
 HeapAlloc               PROTO hHeap:QWORD, dwFlags:DWORD, dwBytes:QWORD
 HeapFree                PROTO hHeap:QWORD, dwFlags:DWORD, lpMem:PTR
 RegGetValueA            PROTO hkey:QWORD, lpSubKey:PTR BYTE, lpValue:PTR BYTE, dwFlags:DWORD, pdwType:PTR DWORD, pvData:PTR, pcbData:PTR DWORD
 
-; --- Console I/O ---
+; Console I/O
 GetStdHandle            PROTO nStdHandle:DWORD
 WriteConsoleA           PROTO hConsoleOutput:QWORD, lpBuffer:PTR, nNumberOfCharsToWrite:DWORD, lpNumberOfCharsWritten:PTR DWORD, lpReserved:PTR
 
-; --- System Information ---
+; System Information
 GetAdaptersInfo         PROTO AdapterInfo:QWORD, SizePointer:QWORD
 GetComputerNameA        PROTO lpBuffer:PTR BYTE, nSize:PTR DWORD
 GetDiskFreeSpaceExA     PROTO lpDirectoryName:PTR BYTE, lpFreeBytesAvailableToCaller:PTR QWORD, lpTotalNumberOfBytes:PTR QWORD, lpTotalNumberOfFreeBytes:PTR QWORD
@@ -45,16 +45,24 @@ RtlGetVersion           PROTO lpVersionInformation:PTR RTL_OSVERSIONINFOEXW
 ; Constants
 ;----------------------------------------------------------------------------
 
+; Win32 handles and flags
 STD_OUTPUT_HANDLE               EQU -11
-MaxBuf                          EQU 256
 HKEY_LOCAL_MACHINE              EQU 80000002h
 RRF_RT_REG_DWORD                EQU 10h
-KIBIBYTE                        EQU 1024
-MEBIBYTE                        EQU 1024 * 1024
-GIBIBYTE                        EQU 1024 * 1024 * 1024
+ERROR_BUFFER_OVERFLOW           EQU 6Fh
+
+; IP_ADAPTER_INFO limits 
 MAX_ADAPTER_ADDRESS_LENGTH      EQU 8
 MAX_ADAPTER_DESCRIPTION_LENGTH  EQU 128
 MAX_ADAPTER_NAME_LENGTH         EQU 256
+
+; Size units
+KIBIBYTE                        EQU 1024
+MEBIBYTE                        EQU 1024 * 1024
+GIBIBYTE                        EQU 1024 * 1024 * 1024
+
+; asmfetch
+MaxBuf                          EQU 256
 
 ;----------------------------------------------------------------------------
 ; Macros
@@ -161,7 +169,7 @@ IP_ADAPTER_INFO ENDS
 ;----------------------------------------------------------------------------
 
         .DATA
-; System information structures (zero-initialized):
+; System information structures (zero-initialized)
 sysInf          SYSTEM_INFO <>
 msEx            MEMORYSTATUSEX <>
 osEx            RTL_OSVERSIONINFOEXW <>
@@ -169,7 +177,7 @@ osEx            RTL_OSVERSIONINFOEXW <>
 ; Size buffer for GetAdaptersInfo
 pAdapterSize    QWORD   0
 
-; Output buffers:
+; Output buffers
 tmpbuf          BYTE    MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use
 timebuf         BYTE    MaxBuf DUP (?)      ; Uptime string buffer
 cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer
@@ -179,7 +187,7 @@ currentdrive    BYTE    MaxBuf DUP (?)      ; Current disk drive letter buffer
 disktotalbytes  QWORD   ?                   ; Drive total bytes buffer
 diskfreebytes   QWORD   ?                   ; Drive free bytes buffer
 
-; Header strings:
+; Header strings
 header_line     BYTE    "----------------------------------------", 0Dh, 0Ah
 header_proc     BYTE    0Dh, 0Ah, "Processor", 0Dh, 0Ah
 header_mem      BYTE    0Dh, 0Ah, "Memory", 0Dh, 0Ah
@@ -187,7 +195,7 @@ header_os       BYTE    0Dh, 0Ah, "Operating System", 0Dh, 0Ah
 header_disks    BYTE    0Dh, 0Ah, "Disks", 0Dh, 0Ah
 header_network  BYTE    0Dh, 0Ah, "Network", 0Dh, 0Ah
 
-; Processor strings:
+; Processor strings
 cpu_vendor      BYTE    "Vendor       : "
 cpu_name        BYTE    "Model        : "
 cpu_cores       BYTE    "Threads      : "
@@ -198,18 +206,18 @@ cpu_arm         BYTE    "ARM"
 cpu_arm64       BYTE    "ARM64"
 cpu_ia64        BYTE    "Intel Itanium"
 
-; Memory strings:
+; Memory strings
 mem_total       BYTE    "Total        : "
 mem_avail       BYTE    "Available    : "
 mem_load        BYTE    "Load         : "
 gibi_whole      QWORD   ?                   ; Store whole portion of RAM size
 gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size
 
-; Disk strings:
+; Disk strings
 disk_total      BYTE    "Total        : "
 disk_avail      BYTE    "Available    : "
 
-; Operating system strings:
+; Operating system strings
 os_version      BYTE    "Version      : "
 os_edition      BYTE    "Edition      : "
 os_build        BYTE    "Build        : "
@@ -232,7 +240,7 @@ comp_name       BYTE    "Hostname     : "
 compNameBuf     BYTE    MaxBuf DUP (0)
 compNameSize    DWORD   MaxBuf
 
-; Uptime strings:
+; Uptime strings
 uptime          BYTE    "Uptime       : "
 comma_sp        BYTE    ", "
 days            QWORD   ?                   ; Uptime days value
@@ -248,7 +256,7 @@ seconds         QWORD   ?                   ; Uptime seconds value
 seconds_label   BYTE    " seconds"
 second_label    BYTE    " second"
 
-; Formatting and utility:
+; Formatting and utility
 unknown         BYTE    "unknown"
 error_msg       BYTE    "error"
 not_avail       BYTE    "Not available"
@@ -266,11 +274,11 @@ stdout          QWORD   ?                   ; Handle to standard output device
 nbwr            DWORD   ?                   ; Number of bytes (characters) actually written
 nbrd            DWORD   ?                   ; Number of bytes (characters) actually read
 
-; Heap:
+; Heap
 hHeap           QWORD   ?                   ; Heap handle from GetProcessHeap
 pAdapterMemory  QWORD   ?                   ; Pointer to allocated memory block from HeapAlloc for GetNetworkAdapters
 
-; Registry:
+; Registry
 ubrSubKey       BYTE    "SOFTWARE\Microsoft\Windows NT\CurrentVersion", 0
 ubrValName      BYTE    "UBR", 0
 ubrBuffer       DWORD   ?
@@ -1267,7 +1275,10 @@ PrintDisks ENDP
 ; Network Functions
 ;=========================================
 
-; Allocate memory and populate network adapter structure.
+; Populates an IP_ADAPTER_INFO list via the two-call GetAdaptersInfo pattern
+; (size unknown up front, so we ask Windows for the required buffer size first).
+; Returns 1 on success, 0 on failure
+; On success, caller owns *pAdapterMemory and must HeapFree it using hHeap
 GetNetworkAdapters PROC
         sub     rsp, 40                     ; Shadow space
 
@@ -1275,8 +1286,10 @@ GetNetworkAdapters PROC
         mov     [hHeap], rax                ; Store handle for current process heap
 
         xor     rcx, rcx                    ; Null buffer pointer for initial call
-        lea     rdx, pAdapterSize           ; Initial call will fail and return necessary buffer size
-        call    GetAdaptersInfo             ; pAdapterSize now contains required buffer size to pass to HeapAlloc
+        lea     rdx, pAdapterSize           ; Initial call will fail and return ERROR_BUFFER_OVERFLOW
+        call    GetAdaptersInfo             ; pAdapterSize will contain the required buffer size to pass to HeapAlloc
+        cmp     eax, ERROR_BUFFER_OVERFLOW  ; Ensure we received the expected error code
+        jne     @fail
 
         mov     rcx, [hHeap]
         mov     rdx, 0
@@ -1301,7 +1314,10 @@ GetNetworkAdapters PROC
         ret
 GetNetworkAdapters ENDP
 
-; Print network adapter information from structure.
+; Prints description and IP address for each adapter in the *pAdapterMemory linked list.
+; Adapters with no IP assigned (0.0.0.0) are skipped.
+; Note: only the first address in each adapter's IpAddressList is printed;
+; additional addresses (IP_ADDR_STRING.Next) are not traversed.
 PrintNetworkAdapters PROC
         push    rbx
         sub     rsp, 32                     ; Shadow space
