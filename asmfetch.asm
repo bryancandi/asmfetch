@@ -55,6 +55,7 @@ ERROR_BUFFER_OVERFLOW           EQU 6Fh
 MAX_ADAPTER_ADDRESS_LENGTH      EQU 8
 MAX_ADAPTER_DESCRIPTION_LENGTH  EQU 128
 MAX_ADAPTER_NAME_LENGTH         EQU 256
+IP_STRING_LENGTH                EQU 16
 
 ; Size units
 KIBIBYTE                        EQU 1024
@@ -135,8 +136,8 @@ PIP_ADDR_STRING TYPEDEF PTR IP_ADDR_STRING
 
 IP_ADDR_STRING STRUCT 8
     Next                        PIP_ADDR_STRING ? ; Pointer to next IP_ADDR_STRING struct
-    IpAddress                   BYTE 16 DUP (?)   ; char array
-    IpMask                      BYTE 16 DUP (?)   ; char array
+    IpAddress                   BYTE  IP_STRING_LENGTH DUP (?) ; char array
+    IpMask                      BYTE  IP_STRING_LENGTH DUP (?) ; char array
     Context                     DWORD ?           ; DWORD
 IP_ADDR_STRING ENDS
 
@@ -1260,7 +1261,7 @@ continue:
         dec     rbx
         jmp     drive_loop
 
-fail:                                      ; This may occur for unformatted disks where no size is available
+fail:                                       ; This may occur for unformatted disks where no size is available
         StrOut  not_avail, LENGTHOF not_avail
         jmp     continue
 done:
@@ -1295,8 +1296,8 @@ GetNetworkAdapters PROC
         mov     rdx, 0
         mov     r8, [pAdapterSize]
         call    HeapAlloc                   ; Allocate memory on heap for GetAdaptersInfo; must be freed by caller
-        test    rax, rax
-        jz      fail                       ; HeapAlloc failed
+        test    rax, rax                    ; Ensure memory was allocated successfully
+        jz      fail
         mov     [pAdapterMemory], rax       ; Store pointer to the allocated memory block
 
         mov     rcx, [pAdapterMemory]
@@ -1343,7 +1344,7 @@ print_loop:
         mov     rax, rbx
         lea     rax, [rax].IP_ADAPTER_INFO.IpAddressList
         lea     rax, [rax].IP_ADDR_STRING.IpAddress
-        StrOut  rax, 16
+        StrOut  rax, IP_STRING_LENGTH - 1   ; Subtract 1 to avoid printing the null terminator
         StrOut  newln, LENGTHOF newln
 
 next_adapter:
