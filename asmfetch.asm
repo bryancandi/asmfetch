@@ -1328,8 +1328,8 @@ PrintNetworkAdapters PROC
         mov     rbx, rax                    ; RBX = first node
 print_loop:
         mov     rax, rbx
-        lea     rax, [rax].IP_ADAPTER_INFO.IpAddressList
-        lea     rax, [rax].IP_ADDR_STRING.IpAddress
+        lea     rax, [rax].IP_ADAPTER_INFO.IpAddressList ; RAX += offset of IP_ADAPTER_INFO.IpAddressList
+        lea     rax, [rax].IP_ADDR_STRING.IpAddress      ; RAX += offset of IP_ADDR_STRING.IpAddress
 
         mov     cl, [rax]
         cmp     cl, '0'                     ; Check if IP starts with 0; if yes, skip adapter
