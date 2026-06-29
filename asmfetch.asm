@@ -435,7 +435,7 @@ start   PROC                                ; Program entry procedure / start
         StrOut  header_line, LENGTHOF header_line
         call    GetNetworkAdapters
         test    eax, eax
-        jz      @skip_network_print         ; GetNetworkAdapters failed
+        jz      skip_network_print          ; GetNetworkAdapters failed
 
         call    PrintNetworkAdapters
 
@@ -444,7 +444,7 @@ start   PROC                                ; Program entry procedure / start
         mov     r8, [pAdapterMemory]
         call    HeapFree                    ; Free memory allocated by GetNetworkAdapters
 
-@skip_network_print:
+skip_network_print:
        ;StrOut  dblsp, LENGTHOF dblsp
         StrOut  newln, LENGTHOF newln
 
@@ -474,9 +474,9 @@ Int2Str PROC
         mov     r9d, r8d                    ; Save buffer size
         xor     r8d, r8d                    ; Initial string length = 0
 
-@loop:
+convert_loop:
         cmp     r8d, r9d                    ; Is the buffer full?
-        je      @done
+        je      done
 
         xor     rdx, rdx                    ; Clear RDX for division
         div     r10                         ; RAX = quotient, RDX = remainder
@@ -485,9 +485,9 @@ Int2Str PROC
         mov     [rdi], dl                   ; Store digit
         inc     r8d                         ; Length + 1
         test    rax, rax
-        jnz     @loop
+        jnz     convert_loop
 
-@done:
+done:
         mov     rax, rdi                    ; Return pointer to first digit
         pop     rdi                         ; Restore RDI
         ret
@@ -571,7 +571,7 @@ GetWinVer PROC
         call    RtlGetVersion
 
         test    eax, eax                    ; 0 = success; nz = failure
-        jnz     @fail
+        jnz     fail
 
         mov     eax, osEx.dwBuildNumber
         cmp     eax, 22000                  ; Is Windows 11 or newer?
@@ -583,20 +583,20 @@ GetWinVer PROC
 is_win11:
         lea     rax, win_11
         mov     r8d, LENGTHOF win_11
-        jmp     @done
+        jmp     done
 is_win10:
         lea     rax, win_10
         mov     r8d, LENGTHOF win_10
-        jmp     @done
+        jmp     done
 is_legacy:
         lea     rax, win_legacy
         mov     r8d, LENGTHOF win_legacy
-        jmp     @done
+        jmp     done
 
-@fail:
+fail:
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
-@done:
+done:
         add     rsp, 40
         ret
 GetWinVer ENDP
@@ -645,11 +645,11 @@ GetWinEdition PROC
 w_home:
         lea     rax, ed_home
         mov     r8d, LENGTHOF ed_home
-        jmp     @done
+        jmp     done
 w_home_sl:
         lea     rax, ed_home_sl
         mov     r8d, LENGTHOF ed_home_sl
-        jmp     @done
+        jmp     done
 w_home_n:
         lea     rax, ed_home_n
         mov     r8d, LENGTHOF ed_home_n
@@ -657,39 +657,39 @@ w_home_n:
 w_pro:
         lea     rax, ed_pro
         mov     r8d, LENGTHOF ed_pro
-        jmp     @done
+        jmp     done
 w_pro_n:
         lea     rax, ed_pro_n
         mov     r8d, LENGTHOF ed_pro_n
-        jmp     @done
+        jmp     done
 w_pro_edu:
         lea     rax, ed_pro_edu
         mov     r8d, LENGTHOF ed_pro_edu
-        jmp     @done
+        jmp     done
 w_pro_ws:
         lea     rax, ed_pro_ws
         mov     r8d, LENGTHOF ed_pro_ws
-        jmp     @done
+        jmp     done
 w_edu:
         lea     rax, ed_edu
         mov     r8d, LENGTHOF ed_edu
-        jmp     @done
+        jmp     done
 w_ent:
         lea     rax, ed_ent
         mov     r8d, LENGTHOF ed_ent
-        jmp     @done
+        jmp     done
 w_ent_e:
         lea     rax, ed_ent_e
         mov     r8d, LENGTHOF ed_ent_e
-        jmp     @done
+        jmp     done
 w_ent_n:
         lea     rax, ed_ent_n
         mov     r8d, LENGTHOF ed_ent_n
-        jmp     @done
+        jmp     done
 w_unknown:
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
-@done:
+done:
         add     rsp, 40
         ret
 GetWinEdition ENDP
@@ -703,13 +703,13 @@ GetWinBuild PROC
         call    RtlGetVersion
 
         test    eax, eax                    ; 0 = success; nz = failure
-        jnz     @fail
+        jnz     fail
 
         mov     eax, osEx.dwBuildNumber
         add     rsp, 40
         ret
 
-@fail:
+fail:
         xor     eax, eax                    ; Return build number: 0
         add     rsp, 40
         ret
@@ -734,7 +734,7 @@ GetWinUBR PROC
         call    RegGetValueA
 
         test    eax, eax                    ; 0 = success; nz = failure (system error code)
-        jnz     @fail
+        jnz     fail
 
         mov     eax, DWORD PTR [ubrBuffer]  ; Return UBR (DWORD) in EAX
 
@@ -743,7 +743,7 @@ GetWinUBR PROC
         pop     rbx
         ret
 
-@fail:
+fail:
         xor     eax, eax                    ; Return UBR as 0 in EAX
         add     rsp, 56
         pop     rdi
@@ -761,14 +761,14 @@ GetComputerNameStr PROC
         call    GetComputerNameA
 
         test    eax, eax                    ; nz = success; 0 = failure
-        jz      @fail
+        jz      fail
 
         lea     rax, compNameBuf
         mov     r8d, compNameSize
         add     rsp, 40
         ret
 
-@fail:
+fail:
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
         add     rsp, 40
@@ -940,27 +940,27 @@ GetCpuArch PROC
 
         lea     rax, unknown
         mov     r8d, LENGTHOF unknown
-        jmp     @done
+        jmp     done
 is_x86:
         lea     rax, cpu_x86
         mov     r8d, LENGTHOF cpu_x86
-        jmp     @done
+        jmp     done
 is_x64:
         lea     rax, cpu_x64
         mov     r8d, LENGTHOF cpu_x64
-        jmp     @done
+        jmp     done
 is_arm:
         lea     rax, cpu_arm
         mov     r8d, LENGTHOF cpu_arm
-        jmp     @done
+        jmp     done
 is_arm64:
         lea     rax, cpu_arm64
         mov     r8d, LENGTHOF cpu_arm64
-        jmp     @done
+        jmp     done
 is_ia64:
         lea     rax, cpu_ia64
         mov     r8d, LENGTHOF cpu_ia64
-@done:
+done:
         add     rsp, 40
         ret
 GetCpuArch ENDP
@@ -996,23 +996,23 @@ GetCpuBrand PROC
         mov     [r10 + 44], edx
 
         xor     r9, r9                      ; R9 = whitespace counter
-@skipspace:
+skipspace:
         cmp     BYTE PTR [r10 + r9], ' '    ; Check for leading whitespaces
-        jne     @startfound
+        jne     startfound
         inc     r9
         cmp     r9, 48                      ; Maximum length of cpuid brand string
-        jae     @startfound
-        jmp     @skipspace
-@startfound:
+        jae     startfound
+        jmp     skipspace
+startfound:
         mov     r8, r9                      ; R8 = string start position
-@findnull:
+findnull:
         cmp     BYTE PTR [r10 + r8], 0      ; Check for null terminator
-        je      @done
+        je      done
         inc     r8
         cmp     r8, 48                      ; Maximum length of cpuid brand string
-        jae     @done
-        jmp     @findnull
-@done:
+        jae     done
+        jmp     findnull
+done:
         add     r10, r9                     ; Advance buffer pointer past whitespaces counted
         mov     rax, r10                    ; RAX = point to buffer address after whitespace (if present)
         sub     r8, r9                      ; R8 = buffer length minus skipped whitespace length
@@ -1088,18 +1088,18 @@ GetMemory PROC
         call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer)
 
         test    rax, rax                    ; nz = success; 0 = failure
-        jz      @fail
+        jz      fail
 
         mov     rax, msEx.ullTotalPhys      ; Load QWORD from struct (total RAM)
         mov     rdx, msEx.ullAvailPhys      ; Load QWORD from struct (available RAM)
         mov     r8d, msEx.dwMemoryLoad      ; Load DWORD from struct (memory load percentage)
-        jmp     @done
+        jmp     done
 
-@fail:
+fail:
         xor     rax, rax                    ; Fail = return zeros
         xor     rdx, rdx
         xor     r8, r8
-@done:
+done:
         add     rsp, 40
         ret
 GetMemory ENDP
@@ -1120,17 +1120,17 @@ PrintDisks PROC
         call    GetLogicalDriveStringsA     ; Write drive letters to buffer; RAX = chars written
 
         test    eax, eax
-        jz      @done
+        jz      done
 
         cmp     rax, LENGTHOF logicaldrives ; Check if logical drives string is larger than the buffer
-        ja      @done                       ; The string wont fit, jump to done
+        ja      done                        ; The string wont fit, jump to done
 
         mov     rbx, rax                    ; RBX = number of characters written by GetLocalDriveStringA
         lea     rsi, logicaldrives
-@loop:
+drive_loop:
         xor     r8d, r8d                    ; R8D = track length of drive path
         test    rbx, rbx
-        jz      @done
+        jz      done
         lea     rdi, currentdrive
 @@:
         mov     al, [rsi]
@@ -1153,101 +1153,101 @@ PrintDisks PROC
         call    GetDiskFreeSpaceExA         ; Write total and free bytes for current drive into buffers
 
         test    eax, eax
-        jz      @fail
+        jz      fail
 
         StrOut  disk_total, LENGTHOF disk_total
 
         mov     rcx, [disktotalbytes]
         mov     r10, GIBIBYTE
         cmp     rcx, r10
-        jae     @gib_t
+        jae     gib_t
         mov     r10, MEBIBYTE
         cmp     rcx, r10
-        jae     @mib_t
+        jae     mib_t
         mov     r10, KIBIBYTE
         cmp     rcx, r10
-        jae     @kib_t
-        jmp     @bytes_t
+        jae     kib_t
+        jmp     bytes_t
 
-@gib_t:
+gib_t:
         shr     rcx, 30
         lea     rdx, tmpbuf
         mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  gib_label, LENGTHOF gib_label
-        jmp     @available
-@mib_t:
+        jmp     available
+mib_t:
         shr     rcx, 20
         lea     rdx, tmpbuf
         mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  mib_label, LENGTHOF mib_label
-        jmp     @available
-@kib_t:
+        jmp     available
+kib_t:
         shr     rcx, 10
         lea     rdx, tmpbuf
         mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  kib_label, LENGTHOF kib_label
-        jmp     @available
-@bytes_t:
+        jmp     available
+bytes_t:
         mov     rcx, [disktotalbytes]
         lea     rdx, tmpbuf
         mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
 
-@available:
+available:
         StrOut  newln, LENGTHOF newln
         StrOut  disk_avail, LENGTHOF disk_avail
 
         mov     rcx, [diskfreebytes]
         mov     r10, GIBIBYTE
         cmp     rcx, r10
-        jae     @gib_f
+        jae     gib_f
         mov     r10, MEBIBYTE
         cmp     rcx, r10
-        jae     @mib_f
+        jae     mib_f
         mov     r10, KIBIBYTE
         cmp     rcx, r10
-        jae     @kib_f
-        jmp     @bytes_f
+        jae     kib_f
+        jmp     bytes_f
 
-@gib_f:
+gib_f:
         shr     rcx, 30
         lea     rdx, tmpbuf
         mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  gib_label, LENGTHOF gib_label
-        jmp     @continue
-@mib_f:
+        jmp     continue
+mib_f:
         shr     rcx, 20
         lea     rdx, tmpbuf
         mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  mib_label, LENGTHOF mib_label
-        jmp     @continue
-@kib_f:
+        jmp     continue
+kib_f:
         shr     rcx, 10
         lea     rdx, tmpbuf
         mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
         StrOut  kib_label, LENGTHOF kib_label
-        jmp     @continue
-@bytes_f:
+        jmp     continue
+bytes_f:
         mov     rcx, [diskfreebytes]
         lea     rdx, tmpbuf
         mov     r8, MaxBuf
         call    Int2Str
         StrOut  rax, r8d
 
-@continue:
+continue:
         StrOut  newln, LENGTHOF newln
 
         ; Defensive clear: currentdrive printed via r8d length, but guard against future code using LENGTHOF
@@ -1258,12 +1258,12 @@ PrintDisks PROC
 
         inc     rsi
         dec     rbx
-        jmp     @loop
+        jmp     drive_loop
 
-@fail:                                      ; This may occur for unformatted disks where no size is available
+fail:                                      ; This may occur for unformatted disks where no size is available
         StrOut  not_avail, LENGTHOF not_avail
-        jmp     @continue
-@done:
+        jmp     continue
+done:
         add     rsp, 32
         pop     rdi
         pop     rsi
@@ -1289,27 +1289,27 @@ GetNetworkAdapters PROC
         lea     rdx, pAdapterSize           ; Initial call will fail and return ERROR_BUFFER_OVERFLOW
         call    GetAdaptersInfo             ; pAdapterSize will contain the required buffer size to pass to HeapAlloc
         cmp     eax, ERROR_BUFFER_OVERFLOW  ; Ensure we received the expected error code
-        jne     @fail
+        jne     fail
 
         mov     rcx, [hHeap]
         mov     rdx, 0
         mov     r8, [pAdapterSize]
         call    HeapAlloc                   ; Allocate memory on heap for GetAdaptersInfo; must be freed by caller
         test    rax, rax
-        jz      @fail                       ; HeapAlloc failed
+        jz      fail                       ; HeapAlloc failed
         mov     [pAdapterMemory], rax       ; Store pointer to the allocated memory block
 
         mov     rcx, [pAdapterMemory]
         lea     rdx, pAdapterSize
         call    GetAdaptersInfo
         test    eax, eax
-        jnz     @fail
+        jnz     fail
         mov     eax, 1                      ; Signal success
-        jmp     @done
+        jmp     done
 
-@fail:
+fail:
         xor     eax, eax
-@done:
+done:
         add     rsp, 40
         ret
 GetNetworkAdapters ENDP
@@ -1324,16 +1324,16 @@ PrintNetworkAdapters PROC
 
         mov     rax, [pAdapterMemory]       ; RAX = address of the IP_ADAPTER_INFO structure
         test    rax, rax                    ; Ensure pAdapterMemory is not null
-        jz      @done
+        jz      done
         mov     rbx, rax                    ; RBX = first node
-@print_loop:
+print_loop:
         mov     rax, rbx
         lea     rax, [rax].IP_ADAPTER_INFO.IpAddressList
         lea     rax, [rax].IP_ADDR_STRING.IpAddress
 
         mov     cl, [rax]
         cmp     cl, '0'                     ; Check if IP starts with 0; if yes, skip adapter
-        je      @next_adapter
+        je      next_adapter
 
         mov     rax, rbx
         lea     rax, [rax].IP_ADAPTER_INFO.Description
@@ -1346,14 +1346,14 @@ PrintNetworkAdapters PROC
         StrOut  rax, 16
         StrOut  newln, LENGTHOF newln
 
-@next_adapter:
+next_adapter:
         mov     rax, [rbx].IP_ADAPTER_INFO.Next
         test    rax, rax                    ; Is there is another adapter to print?
-        jz      @done
+        jz      done
         mov     rbx, rax                    ; RBX = next node
-        jmp     @print_loop
+        jmp     print_loop
 
-@done:
+done:
         add     rsp, 32
         pop     rbx
         ret
