@@ -11,9 +11,9 @@ Operating System
 ----------------------------------------
 Version      : Windows 11
 Edition      : Pro
-Build        : 26200.8728
+Build        : 26200.8737
 Hostname     : WIN-THINKPAD
-Uptime       : 7 days, 1 hour, 4 minutes, 45 seconds
+Uptime       : 4 days, 11 hours, 58 minutes, 1 second
 
 Processor
 ----------------------------------------
@@ -25,15 +25,24 @@ Architecture : x86_64
 Memory
 ----------------------------------------
 Total        : 15.75 GiB
-Available    : 6.65 GiB
+Available    : 6.74 GiB
 Load         : 57%
 
 Disks
 ----------------------------------------
 C:\
 Total        : 929 GiB
-Available    : 632 GiB
+Available    : 628 GiB
 G:\
 Total        : 200 GiB
 Available    : 44 GiB
+
+Network
+----------------------------------------
+Hyper-V Virtual Ethernet Adapter
+172.25.176.1
+Hyper-V Virtual Ethernet Adapter #2
+172.20.80.1
+Intel(R) Wireless-AC 9560 160MHz
+192.168.200.211
 ```
