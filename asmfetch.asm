@@ -1,5 +1,11 @@
 ;============================================================================
-; asmfetch.asm - x64 System Information utility for Windows console.
+;                                 ____         __            __
+;   ____ _   _____   ____ ___    / __/  ___   / /_  _____   / /_
+;  / __ `/  / ___/  / __ `__ \  / /_   / _ \ / __/ / ___/  / __ \
+; / /_/ /  (__  )  / / / / / / / __/  /  __// /_  / /__   / / / /
+; \__,_/  /____/  /_/ /_/ /_/ /_/     \___/ \__/  \___/  /_/ /_/
+; ---------------------------------------------------------------------------
+; asmfetch.asm - x64 System Information Utility for the Windows Console
 ;
 ; Assemble and link with:
 ; ml64.exe /c asmfetch.asm
@@ -222,20 +228,103 @@ disk_avail      BYTE    "Available    : "
 os_version      BYTE    "Version      : "
 os_edition      BYTE    "Edition      : "
 os_build        BYTE    "Build        : "
+win_next        BYTE    "Windows"
 win_11          BYTE    "Windows 11"
 win_10          BYTE    "Windows 10"
 win_legacy      BYTE    "Windows (pre-10)"
+ed_business     BYTE    "Business"
+ed_business_n   BYTE    "Business N"
+ed_cluster_srv  BYTE    "HPC Edition"
+ed_cluster_srv_v BYTE   "Server Hyper Core V"
 ed_home         BYTE    "Home"
-ed_home_sl      BYTE    "Home Single Language"
+ed_home_china   BYTE    "Home China"
 ed_home_n       BYTE    "Home N"
-ed_pro          BYTE    "Pro"
-ed_pro_n        BYTE    "Pro N"
-ed_pro_edu      BYTE    "Pro Education"
-ed_pro_ws       BYTE    "Pro for Workstations"
+ed_home_sl      BYTE    "Home Single Language"
+ed_dc_eval      BYTE    "Server Datacenter (evaluation installation)"
+ed_dc_sac_core  BYTE    "Server Datacenter, Semi-Annual Channel (core installation)"
+ed_std_sac_core BYTE    "Server Standard, Semi-Annual Channel (core installation)"
+ed_dc_srv       BYTE    "Server Datacenter (full installation)"
+ed_dc_srv_core  BYTE    "Server Datacenter (core installation)"
+ed_dc_srv_core_v BYTE   "Server Datacenter without Hyper-V (core installation)"
+ed_dc_srv_v     BYTE    "Server Datacenter without Hyper-V (full installation)"
 ed_edu          BYTE    "Education"
 ed_ent          BYTE    "Enterprise"
 ed_ent_e        BYTE    "Enterprise E"
+ed_ent_eval     BYTE    "Enterprise Evaluation"
 ed_ent_n        BYTE    "Enterprise N"
+ed_ent_n_eval   BYTE    "Enterprise N Evaluation"
+ed_ent_ltsb     BYTE    "Enterprise 2015 LTSB"
+ed_ent_ltsb_eval BYTE   "Enterprise 2015 LTSB Evaluation"
+ed_ent_ltsb_n   BYTE    "Enterprise 2015 LTSB N"
+ed_ent_ltsb_n_eval BYTE "Enterprise 2015 LTSB N Evaluation"
+ed_ent_srv      BYTE    "Server Enterprise (full installation)"
+ed_ent_srv_core BYTE    "Server Enterprise (core installation)"
+ed_ent_srv_core_v BYTE  "Server Enterprise without Hyper-V (core installation)"
+ed_ent_srv_ia64 BYTE    "Server Enterprise for Itanium-based Systems"
+ed_ent_srv_v    BYTE    "Server Enterprise without Hyper-V (full installation)"
+ed_ebs_addl     BYTE    "Essential Server Solution Additional"
+ed_ebs_addlsvc  BYTE    "Essential Server Solution Additional SVC"
+ed_ebs_mgmt     BYTE    "Essential Server Solution Management"
+ed_ebs_mgmtsvc  BYTE    "Essential Server Solution Management SVC"
+ed_home_basic   BYTE    "Home Basic"
+ed_home_basic_n BYTE    "Home Basic N"
+ed_home_prem    BYTE    "Home Premium"
+ed_home_prem_n  BYTE    "Home Premium N"
+ed_home_srv     BYTE    "Windows Home Server 2011"
+ed_stor_srv_ess BYTE    "Storage Server 2008 R2 Essentials"
+ed_hyperv       BYTE    "Microsoft Hyper-V Server"
+ed_iot_ent      BYTE    "IoT Enterprise"
+ed_iot_ent_ltsc BYTE    "IoT Enterprise LTSC"
+ed_iot_core     BYTE    "IoT Core"
+ed_iot_core_comm BYTE   "IoT Core Commercial"
+ed_ebs_mgmt_srv BYTE    "Essential Business Server Management Server"
+ed_ebs_msg_srv  BYTE    "Essential Business Server Messaging Server"
+ed_ebs_sec_srv  BYTE    "Essential Business Server Security Server"
+ed_mobile       BYTE    "Mobile"
+ed_mobile_ent   BYTE    "Mobile Enterprise"
+ed_mp_prem      BYTE    "MultiPoint Server Premium"
+ed_mp_std       BYTE    "MultiPoint Server Standard"
+ed_team         BYTE    "Team"
+ed_pro_edu      BYTE    "Pro Education"
+ed_pro_ws       BYTE    "Pro for Workstations"
+ed_pro          BYTE    "Pro"
+ed_pro_n        BYTE    "Pro N"
+ed_pro_wmc      BYTE    "Professional with Media Center"
+ed_sbs_ess      BYTE    "Small Business Server 2011 Essentials"
+ed_sbs_em       BYTE    "Server For SB Solutions EM"
+ed_srv_sbs      BYTE    "Server For SB Solutions"
+ed_srv_sbs_em   BYTE    "Server For SB Solutions EM"
+ed_srv_ess      BYTE    "Server 2008 for Windows Essential Server Solutions"
+ed_srv_ess_v    BYTE    "Server 2008 without Hyper-V for Windows Essential Server Solutions"
+ed_srv_foundation BYTE  "Server Foundation"
+ed_ent_vdesktop BYTE    "Enterprise for Virtual Desktops"
+ed_sbs          BYTE    "Small Business Server"
+ed_sbs_prem     BYTE    "Small Business Server Premium"
+ed_sbs_prem_core BYTE   "Small Business Server Premium (core installation)"
+ed_mp_srv       BYTE    "MultiPoint Server"
+ed_std_eval     BYTE    "Server Standard (evaluation installation)"
+ed_std_srv      BYTE    "Server Standard (full installation)"
+ed_std_srv_core BYTE    "Server Standard (core installation)"
+ed_std_srv_core_v BYTE  "Server Standard without Hyper-V (core installation)"
+ed_std_srv_v    BYTE    "Server Standard without Hyper-V"
+ed_std_srv_sol  BYTE    "Server Solutions Premium"
+ed_std_srv_sol_core BYTE "Server Solutions Premium (core installation)"
+ed_starter      BYTE    "Starter"
+ed_starter_n    BYTE    "Starter N"
+ed_stor_ent     BYTE    "Storage Server Enterprise"
+ed_stor_ent_core BYTE   "Storage Server Enterprise (core installation)"
+ed_stor_exp     BYTE    "Storage Server Express"
+ed_stor_exp_core BYTE   "Storage Server Express (core installation)"
+ed_stor_std_eval BYTE   "Storage Server Standard (evaluation installation)"
+ed_stor_std     BYTE    "Storage Server Standard"
+ed_stor_std_core BYTE   "Storage Server Standard (core installation)"
+ed_stor_wg_eval BYTE    "Storage Server Workgroup (evaluation installation)"
+ed_stor_wg      BYTE    "Storage Server Workgroup"
+ed_stor_wg_core BYTE    "Storage Server Workgroup (core installation)"
+ed_ultimate     BYTE    "Ultimate"
+ed_ultimate_n   BYTE    "Ultimate N"
+ed_web          BYTE    "Web Server (full installation)"
+ed_web_core     BYTE    "Web Server (core installation)"
 productType     DWORD   ?                   ; Store return value from GetProductInfo function
 comp_name       BYTE    "Hostname     : "
 compNameBuf     BYTE    MaxBuf DUP (0)
@@ -574,13 +663,21 @@ GetWinVer PROC
         test    eax, eax                    ; 0 = success; nz = failure
         jnz     fail
 
-        mov     eax, osEx.dwBuildNumber
-        cmp     eax, 22000                  ; Is Windows 11 or newer?
-        jae     is_win11                    ; Yes
-        cmp     eax, 10240                  ; Is Windows 10?
-        jae     is_win10                    ; Yes
-        jmp     is_legacy                   ; No
+        mov     eax, osEx.dwMajorVersion
+        cmp     eax, 10                     ; Future / unknown Windows family
+        ja      is_win_next
 
+        mov     eax, osEx.dwBuildNumber
+        cmp     eax, 22000                  ; Windows 11
+        jae     is_win11
+        cmp     eax, 10240                  ; Windows 10
+        jae     is_win10
+        jmp     is_legacy
+
+is_win_next:
+        lea     rax, win_next
+        mov     r8d, LENGTHOF win_next
+        jmp     done
 is_win11:
         lea     rax, win_11
         mov     r8d, LENGTHOF win_11
@@ -618,58 +715,253 @@ GetWinEdition PROC
         jz      w_unknown
 
         mov     eax, [productType]
+        cmp     eax, 00000006h
+        je      w_business
+        cmp     eax, 00000010h
+        je      w_business_n
+        cmp     eax, 00000012h
+        je      w_cluster_srv
+        cmp     eax, 00000040h
+        je      w_cluster_srv_v
         cmp     eax, 00000065h
         je      w_home
-        cmp     eax, 00000064h
-        je      w_home_sl
+        cmp     eax, 00000063h
+        je      w_home_china
         cmp     eax, 00000062h
         je      w_home_n
-        cmp     eax, 00000030h
-        je      w_pro
-        cmp     eax, 00000031h
-        je      w_pro_n
-        cmp     eax, 000000A4h
-        je      w_pro_edu
-        cmp     eax, 000000A1h
-        je      w_pro_ws
+        cmp     eax, 00000064h
+        je      w_home_sl
+        cmp     eax, 00000050h
+        je      w_dc_eval
+        cmp     eax, 00000091h
+        je      w_dc_sac_core
+        cmp     eax, 00000092h
+        je      w_std_sac_core
+        cmp     eax, 00000008h
+        je      w_dc_srv
+        cmp     eax, 0000000Ch
+        je      w_dc_srv_core
+        cmp     eax, 00000027h
+        je      w_dc_srv_core_v
+        cmp     eax, 00000025h
+        je      w_dc_srv_v
         cmp     eax, 00000079h
         je      w_edu
         cmp     eax, 00000004h
         je      w_ent
         cmp     eax, 00000046h
         je      w_ent_e
+        cmp     eax, 00000048h
+        je      w_ent_eval
         cmp     eax, 0000001Bh
         je      w_ent_n
-
+        cmp     eax, 00000054h
+        je      w_ent_n_eval
+        cmp     eax, 0000007Dh
+        je      w_ent_ltsb
+        cmp     eax, 00000081h
+        je      w_ent_ltsb_eval
+        cmp     eax, 0000007Eh
+        je      w_ent_ltsb_n
+        cmp     eax, 00000082h
+        je      w_ent_ltsb_n_eval
+        cmp     eax, 0000000Ah
+        je      w_ent_srv
+        cmp     eax, 0000000Eh
+        je      w_ent_srv_core
+        cmp     eax, 00000029h
+        je      w_ent_srv_core_v
+        cmp     eax, 0000000Fh
+        je      w_ent_srv_ia64
+        cmp     eax, 00000026h
+        je      w_ent_srv_v
+        cmp     eax, 0000003Ch
+        je      w_ebs_addl
+        cmp     eax, 0000003Eh
+        je      w_ebs_addlsvc
+        cmp     eax, 0000003Bh
+        je      w_ebs_mgmt
+        cmp     eax, 0000003Dh
+        je      w_ebs_mgmtsvc
+        cmp     eax, 00000002h
+        je      w_home_basic
+        cmp     eax, 00000005h
+        je      w_home_basic_n
+        cmp     eax, 00000003h
+        je      w_home_prem
+        cmp     eax, 0000001Ah
+        je      w_home_prem_n
+        cmp     eax, 00000022h
+        je      w_home_srv
+        cmp     eax, 00000013h
+        je      w_stor_srv_ess
+        cmp     eax, 0000002Ah
+        je      w_hyperv
+        cmp     eax, 000000BCh
+        je      w_iot_ent
+        cmp     eax, 000000BFh
+        je      w_iot_ent_ltsc
+        cmp     eax, 0000007Bh
+        je      w_iot_core
+        cmp     eax, 00000083h
+        je      w_iot_core_comm
+        cmp     eax, 0000001Eh
+        je      w_ebs_mgmt_srv
+        cmp     eax, 00000020h
+        je      w_ebs_msg_srv
+        cmp     eax, 0000001Fh
+        je      w_ebs_sec_srv
+        cmp     eax, 00000068h
+        je      w_mobile
+        cmp     eax, 00000085h
+        je      w_mobile_ent
+        cmp     eax, 0000004Dh
+        je      w_mp_prem
+        cmp     eax, 0000004Ch
+        je      w_mp_std
+        cmp     eax, 00000077h
+        je      w_team
+        cmp     eax, 000000A4h
+        je      w_pro_edu
+        cmp     eax, 000000A1h
+        je      w_pro_ws
+        cmp     eax, 00000030h
+        je      w_pro
+        cmp     eax, 00000031h
+        je      w_pro_n
+        cmp     eax, 00000067h
+        je      w_pro_wmc
+        cmp     eax, 00000032h
+        je      w_sbs_ess
+        cmp     eax, 00000036h
+        je      w_sbs_em
+        cmp     eax, 00000033h
+        je      w_srv_sbs
+        cmp     eax, 00000037h
+        je      w_srv_sbs_em
+        cmp     eax, 00000018h
+        je      w_srv_ess
+        cmp     eax, 00000023h
+        je      w_srv_ess_v
+        cmp     eax, 00000021h
+        je      w_srv_foundation
+        cmp     eax, 000000AFh
+        je      w_ent_vdesktop
+        cmp     eax, 00000009h
+        je      w_sbs
+        cmp     eax, 00000019h
+        je      w_sbs_prem
+        cmp     eax, 0000003Fh
+        je      w_sbs_prem_core
+        cmp     eax, 00000038h
+        je      w_mp_srv
+        cmp     eax, 0000004Fh
+        je      w_std_eval
+        cmp     eax, 00000007h
+        je      w_std_srv
+        cmp     eax, 0000000Dh
+        je      w_std_srv_core
+        cmp     eax, 00000028h
+        je      w_std_srv_core_v
+        cmp     eax, 00000024h
+        je      w_std_srv_v
+        cmp     eax, 00000034h
+        je      w_std_srv_sol
+        cmp     eax, 00000035h
+        je      w_std_srv_sol_core
+        cmp     eax, 0000000Bh
+        je      w_starter
+        cmp     eax, 0000002Fh
+        je      w_starter_n
+        cmp     eax, 00000017h
+        je      w_stor_ent
+        cmp     eax, 0000002Eh
+        je      w_stor_ent_core
+        cmp     eax, 00000014h
+        je      w_stor_exp
+        cmp     eax, 0000002Bh
+        je      w_stor_exp_core
+        cmp     eax, 00000060h
+        je      w_stor_std_eval
+        cmp     eax, 00000015h
+        je      w_stor_std
+        cmp     eax, 0000002Ch
+        je      w_stor_std_core
+        cmp     eax, 0000005Fh
+        je      w_stor_wg_eval
+        cmp     eax, 00000016h
+        je      w_stor_wg
+        cmp     eax, 0000002Dh
+        je      w_stor_wg_core
+        cmp     eax, 00000001h
+        je      w_ultimate
+        cmp     eax, 0000001Ch
+        je      w_ultimate_n
+        cmp     eax, 00000011h
+        je      w_web
+        cmp     eax, 0000001Dh
+        je      w_web_core
         jmp     w_unknown                   ; Default case if edition is not listed
 
+w_business:
+        lea     rax, ed_business
+        mov     r8d, LENGTHOF ed_business
+        jmp     done
+w_business_n:
+        lea     rax, ed_business_n
+        mov     r8d, LENGTHOF ed_business_n
+        jmp     done
+w_cluster_srv:
+        lea     rax, ed_cluster_srv
+        mov     r8d, LENGTHOF ed_cluster_srv
+        jmp     done
+w_cluster_srv_v:
+        lea     rax, ed_cluster_srv_v
+        mov     r8d, LENGTHOF ed_cluster_srv_v
+        jmp     done
 w_home:
         lea     rax, ed_home
         mov     r8d, LENGTHOF ed_home
+        jmp     done
+w_home_china:
+        lea     rax, ed_home_china
+        mov     r8d, LENGTHOF ed_home_china
+        jmp     done
+w_home_n:
+        lea     rax, ed_home_n
+        mov     r8d, LENGTHOF ed_home_n
         jmp     done
 w_home_sl:
         lea     rax, ed_home_sl
         mov     r8d, LENGTHOF ed_home_sl
         jmp     done
-w_home_n:
-        lea     rax, ed_home_n
-        mov     r8d, LENGTHOF ed_home_n
-        ret
-w_pro:
-        lea     rax, ed_pro
-        mov     r8d, LENGTHOF ed_pro
+w_dc_eval:
+        lea     rax, ed_dc_eval
+        mov     r8d, LENGTHOF ed_dc_eval
         jmp     done
-w_pro_n:
-        lea     rax, ed_pro_n
-        mov     r8d, LENGTHOF ed_pro_n
+w_dc_sac_core:
+        lea     rax, ed_dc_sac_core
+        mov     r8d, LENGTHOF ed_dc_sac_core
         jmp     done
-w_pro_edu:
-        lea     rax, ed_pro_edu
-        mov     r8d, LENGTHOF ed_pro_edu
+w_std_sac_core:
+        lea     rax, ed_std_sac_core
+        mov     r8d, LENGTHOF ed_std_sac_core
         jmp     done
-w_pro_ws:
-        lea     rax, ed_pro_ws
-        mov     r8d, LENGTHOF ed_pro_ws
+w_dc_srv:
+        lea     rax, ed_dc_srv
+        mov     r8d, LENGTHOF ed_dc_srv
+        jmp     done
+w_dc_srv_core:
+        lea     rax, ed_dc_srv_core
+        mov     r8d, LENGTHOF ed_dc_srv_core
+        jmp     done
+w_dc_srv_core_v:
+        lea     rax, ed_dc_srv_core_v
+        mov     r8d, LENGTHOF ed_dc_srv_core_v
+        jmp     done
+w_dc_srv_v:
+        lea     rax, ed_dc_srv_v
+        mov     r8d, LENGTHOF ed_dc_srv_v
         jmp     done
 w_edu:
         lea     rax, ed_edu
@@ -683,9 +975,305 @@ w_ent_e:
         lea     rax, ed_ent_e
         mov     r8d, LENGTHOF ed_ent_e
         jmp     done
+w_ent_eval:
+        lea     rax, ed_ent_eval
+        mov     r8d, LENGTHOF ed_ent_eval
+        jmp     done
 w_ent_n:
         lea     rax, ed_ent_n
         mov     r8d, LENGTHOF ed_ent_n
+        jmp     done
+w_ent_n_eval:
+        lea     rax, ed_ent_n_eval
+        mov     r8d, LENGTHOF ed_ent_n_eval
+        jmp     done
+w_ent_ltsb:
+        lea     rax, ed_ent_ltsb
+        mov     r8d, LENGTHOF ed_ent_ltsb
+        jmp     done
+w_ent_ltsb_eval:
+        lea     rax, ed_ent_ltsb_eval
+        mov     r8d, LENGTHOF ed_ent_ltsb_eval
+        jmp     done
+w_ent_ltsb_n:
+        lea     rax, ed_ent_ltsb_n
+        mov     r8d, LENGTHOF ed_ent_ltsb_n
+        jmp     done
+w_ent_ltsb_n_eval:
+        lea     rax, ed_ent_ltsb_n_eval
+        mov     r8d, LENGTHOF ed_ent_ltsb_n_eval
+        jmp     done
+w_ent_srv:
+        lea     rax, ed_ent_srv
+        mov     r8d, LENGTHOF ed_ent_srv
+        jmp     done
+w_ent_srv_core:
+        lea     rax, ed_ent_srv_core
+        mov     r8d, LENGTHOF ed_ent_srv_core
+        jmp     done
+w_ent_srv_core_v:
+        lea     rax, ed_ent_srv_core_v
+        mov     r8d, LENGTHOF ed_ent_srv_core_v
+        jmp     done
+w_ent_srv_ia64:
+        lea     rax, ed_ent_srv_ia64
+        mov     r8d, LENGTHOF ed_ent_srv_ia64
+        jmp     done
+w_ent_srv_v:
+        lea     rax, ed_ent_srv_v
+        mov     r8d, LENGTHOF ed_ent_srv_v
+        jmp     done
+w_ebs_addl:
+        lea     rax, ed_ebs_addl
+        mov     r8d, LENGTHOF ed_ebs_addl
+        jmp     done
+w_ebs_addlsvc:
+        lea     rax, ed_ebs_addlsvc
+        mov     r8d, LENGTHOF ed_ebs_addlsvc
+        jmp     done
+w_ebs_mgmt:
+        lea     rax, ed_ebs_mgmt
+        mov     r8d, LENGTHOF ed_ebs_mgmt
+        jmp     done
+w_ebs_mgmtsvc:
+        lea     rax, ed_ebs_mgmtsvc
+        mov     r8d, LENGTHOF ed_ebs_mgmtsvc
+        jmp     done
+w_home_basic:
+        lea     rax, ed_home_basic
+        mov     r8d, LENGTHOF ed_home_basic
+        jmp     done
+w_home_basic_n:
+        lea     rax, ed_home_basic_n
+        mov     r8d, LENGTHOF ed_home_basic_n
+        jmp     done
+w_home_prem:
+        lea     rax, ed_home_prem
+        mov     r8d, LENGTHOF ed_home_prem
+        jmp     done
+w_home_prem_n:
+        lea     rax, ed_home_prem_n
+        mov     r8d, LENGTHOF ed_home_prem_n
+        jmp     done
+w_home_srv:
+        lea     rax, ed_home_srv
+        mov     r8d, LENGTHOF ed_home_srv
+        jmp     done
+w_stor_srv_ess:
+        lea     rax, ed_stor_srv_ess
+        mov     r8d, LENGTHOF ed_stor_srv_ess
+        jmp     done
+w_hyperv:
+        lea     rax, ed_hyperv
+        mov     r8d, LENGTHOF ed_hyperv
+        jmp     done
+w_iot_ent:
+        lea     rax, ed_iot_ent
+        mov     r8d, LENGTHOF ed_iot_ent
+        jmp     done
+w_iot_ent_ltsc:
+        lea     rax, ed_iot_ent_ltsc
+        mov     r8d, LENGTHOF ed_iot_ent_ltsc
+        jmp     done
+w_iot_core:
+        lea     rax, ed_iot_core
+        mov     r8d, LENGTHOF ed_iot_core
+        jmp     done
+w_iot_core_comm:
+        lea     rax, ed_iot_core_comm
+        mov     r8d, LENGTHOF ed_iot_core_comm
+        jmp     done
+w_ebs_mgmt_srv:
+        lea     rax, ed_ebs_mgmt_srv
+        mov     r8d, LENGTHOF ed_ebs_mgmt_srv
+        jmp     done
+w_ebs_msg_srv:
+        lea     rax, ed_ebs_msg_srv
+        mov     r8d, LENGTHOF ed_ebs_msg_srv
+        jmp     done
+w_ebs_sec_srv:
+        lea     rax, ed_ebs_sec_srv
+        mov     r8d, LENGTHOF ed_ebs_sec_srv
+        jmp     done
+w_mobile:
+        lea     rax, ed_mobile
+        mov     r8d, LENGTHOF ed_mobile
+        jmp     done
+w_mobile_ent:
+        lea     rax, ed_mobile_ent
+        mov     r8d, LENGTHOF ed_mobile_ent
+        jmp     done
+w_mp_prem:
+        lea     rax, ed_mp_prem
+        mov     r8d, LENGTHOF ed_mp_prem
+        jmp     done
+w_mp_std:
+        lea     rax, ed_mp_std
+        mov     r8d, LENGTHOF ed_mp_std
+        jmp     done
+w_team:
+        lea     rax, ed_team
+        mov     r8d, LENGTHOF ed_team
+        jmp     done
+w_pro_edu:
+        lea     rax, ed_pro_edu
+        mov     r8d, LENGTHOF ed_pro_edu
+        jmp     done
+w_pro_ws:
+        lea     rax, ed_pro_ws
+        mov     r8d, LENGTHOF ed_pro_ws
+        jmp     done
+w_pro:
+        lea     rax, ed_pro
+        mov     r8d, LENGTHOF ed_pro
+        jmp     done
+w_pro_n:
+        lea     rax, ed_pro_n
+        mov     r8d, LENGTHOF ed_pro_n
+        jmp     done
+w_pro_wmc:
+        lea     rax, ed_pro_wmc
+        mov     r8d, LENGTHOF ed_pro_wmc
+        jmp     done
+w_sbs_ess:
+        lea     rax, ed_sbs_ess
+        mov     r8d, LENGTHOF ed_sbs_ess
+        jmp     done
+w_sbs_em:
+        lea     rax, ed_sbs_em
+        mov     r8d, LENGTHOF ed_sbs_em
+        jmp     done
+w_srv_sbs:
+        lea     rax, ed_srv_sbs
+        mov     r8d, LENGTHOF ed_srv_sbs
+        jmp     done
+w_srv_sbs_em:
+        lea     rax, ed_srv_sbs_em
+        mov     r8d, LENGTHOF ed_srv_sbs_em
+        jmp     done
+w_srv_ess:
+        lea     rax, ed_srv_ess
+        mov     r8d, LENGTHOF ed_srv_ess
+        jmp     done
+w_srv_ess_v:
+        lea     rax, ed_srv_ess_v
+        mov     r8d, LENGTHOF ed_srv_ess_v
+        jmp     done
+w_srv_foundation:
+        lea     rax, ed_srv_foundation
+        mov     r8d, LENGTHOF ed_srv_foundation
+        jmp     done
+w_ent_vdesktop:
+        lea     rax, ed_ent_vdesktop
+        mov     r8d, LENGTHOF ed_ent_vdesktop
+        jmp     done
+w_sbs:
+        lea     rax, ed_sbs
+        mov     r8d, LENGTHOF ed_sbs
+        jmp     done
+w_sbs_prem:
+        lea     rax, ed_sbs_prem
+        mov     r8d, LENGTHOF ed_sbs_prem
+        jmp     done
+w_sbs_prem_core:
+        lea     rax, ed_sbs_prem_core
+        mov     r8d, LENGTHOF ed_sbs_prem_core
+        jmp     done
+w_mp_srv:
+        lea     rax, ed_mp_srv
+        mov     r8d, LENGTHOF ed_mp_srv
+        jmp     done
+w_std_eval:
+        lea     rax, ed_std_eval
+        mov     r8d, LENGTHOF ed_std_eval
+        jmp     done
+w_std_srv:
+        lea     rax, ed_std_srv
+        mov     r8d, LENGTHOF ed_std_srv
+        jmp     done
+w_std_srv_core:
+        lea     rax, ed_std_srv_core
+        mov     r8d, LENGTHOF ed_std_srv_core
+        jmp     done
+w_std_srv_core_v:
+        lea     rax, ed_std_srv_core_v
+        mov     r8d, LENGTHOF ed_std_srv_core_v
+        jmp     done
+w_std_srv_v:
+        lea     rax, ed_std_srv_v
+        mov     r8d, LENGTHOF ed_std_srv_v
+        jmp     done
+w_std_srv_sol:
+        lea     rax, ed_std_srv_sol
+        mov     r8d, LENGTHOF ed_std_srv_sol
+        jmp     done
+w_std_srv_sol_core:
+        lea     rax, ed_std_srv_sol_core
+        mov     r8d, LENGTHOF ed_std_srv_sol_core
+        jmp     done
+w_starter:
+        lea     rax, ed_starter
+        mov     r8d, LENGTHOF ed_starter
+        jmp     done
+w_starter_n:
+        lea     rax, ed_starter_n
+        mov     r8d, LENGTHOF ed_starter_n
+        jmp     done
+w_stor_ent:
+        lea     rax, ed_stor_ent
+        mov     r8d, LENGTHOF ed_stor_ent
+        jmp     done
+w_stor_ent_core:
+        lea     rax, ed_stor_ent_core
+        mov     r8d, LENGTHOF ed_stor_ent_core
+        jmp     done
+w_stor_exp:
+        lea     rax, ed_stor_exp
+        mov     r8d, LENGTHOF ed_stor_exp
+        jmp     done
+w_stor_exp_core:
+        lea     rax, ed_stor_exp_core
+        mov     r8d, LENGTHOF ed_stor_exp_core
+        jmp     done
+w_stor_std_eval:
+        lea     rax, ed_stor_std_eval
+        mov     r8d, LENGTHOF ed_stor_std_eval
+        jmp     done
+w_stor_std:
+        lea     rax, ed_stor_std
+        mov     r8d, LENGTHOF ed_stor_std
+        jmp     done
+w_stor_std_core:
+        lea     rax, ed_stor_std_core
+        mov     r8d, LENGTHOF ed_stor_std_core
+        jmp     done
+w_stor_wg_eval:
+        lea     rax, ed_stor_wg_eval
+        mov     r8d, LENGTHOF ed_stor_wg_eval
+        jmp     done
+w_stor_wg:
+        lea     rax, ed_stor_wg
+        mov     r8d, LENGTHOF ed_stor_wg
+        jmp     done
+w_stor_wg_core:
+        lea     rax, ed_stor_wg_core
+        mov     r8d, LENGTHOF ed_stor_wg_core
+        jmp     done
+w_ultimate:
+        lea     rax, ed_ultimate
+        mov     r8d, LENGTHOF ed_ultimate
+        jmp     done
+w_ultimate_n:
+        lea     rax, ed_ultimate_n
+        mov     r8d, LENGTHOF ed_ultimate_n
+        jmp     done
+w_web:
+        lea     rax, ed_web
+        mov     r8d, LENGTHOF ed_web
+        jmp     done
+w_web_core:
+        lea     rax, ed_web_core
+        mov     r8d, LENGTHOF ed_web_core
         jmp     done
 w_unknown:
         lea     rax, unknown
