@@ -25,24 +25,22 @@ Architecture : x86_64
 Memory
 ----------------------------------------
 Total        : 15.75 GiB
-Available    : 6.74 GiB
-Load         : 57%
+Available    : 8.65 GiB
+Load         : 45%
 
 Disks
 ----------------------------------------
 C:\
 Total        : 929 GiB
-Available    : 628 GiB
+Available    : 641 GiB
 G:\
 Total        : 200 GiB
-Available    : 44 GiB
+Available    : 43 GiB
 
 Network
 ----------------------------------------
 Hyper-V Virtual Ethernet Adapter
-172.25.176.1
-Hyper-V Virtual Ethernet Adapter #2
-172.20.80.1
+172.20.32.1
 Intel(R) Wireless-AC 9560 160MHz
 192.168.200.211
 ```
