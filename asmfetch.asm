@@ -172,28 +172,55 @@ IP_ADAPTER_INFO STRUCT 8
 IP_ADAPTER_INFO ENDS
 
 ;----------------------------------------------------------------------------
-; Data Segment
+; Data Segments
 ;----------------------------------------------------------------------------
 
         .DATA
-; System information structures (zero-initialized)
+; Structure initialization
 sysInf          SYSTEM_INFO <>
 msEx            MEMORYSTATUSEX <>
 osEx            RTL_OSVERSIONINFOEXW <>
-
-; Size buffer for GetAdaptersInfo
+; Operating system function initialized variables
+compNameBuf     BYTE    MaxBuf DUP (0)
+compNameSize    DWORD   MaxBuf
+; Network function initialized variables
 pAdapterSize    QWORD   0
+; Registry
+ubrLength       DWORD   4
 
-; Output buffers
-tmpbuf          BYTE    MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use
+        .DATA?
+; Handles and Win32 function variables
+stdout          QWORD   ?                   ; Handle to standard output device
+nbwr            DWORD   ?                   ; Number of bytes (characters) actually written
+nbrd            DWORD   ?                   ; Number of bytes (characters) actually read
+hHeap           QWORD   ?                   ; Heap handle from GetProcessHeap
+; Operating system function variables
+productType     DWORD   ?                   ; Store return value from GetProductInfo function
+; Uptime function variables
+days            QWORD   ?                   ; Uptime days value
+hours           QWORD   ?                   ; Uptime hours value
+minutes         QWORD   ?                   ; Uptime minutes value
+seconds         QWORD   ?                   ; Uptime seconds value
 timebuf         BYTE    MaxBuf DUP (?)      ; Uptime string buffer
+; Processor function variables
 cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer
+; Memory function variables
+gibi_whole      QWORD   ?                   ; Store whole portion of RAM size
+gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size
 membuf          BYTE    MaxBuf DUP (?)      ; Memory data buffer
+; Disks function variables
 logicaldrives   BYTE    MaxBuf DUP (?)      ; Logical disk drive letters buffer
 currentdrive    BYTE    MaxBuf DUP (?)      ; Current disk drive letter buffer
 disktotalbytes  QWORD   ?                   ; Drive total bytes buffer
 diskfreebytes   QWORD   ?                   ; Drive free bytes buffer
+; Network function variables
+pAdapterMemory  QWORD   ?                   ; Pointer to allocated memory block from HeapAlloc for GetNetworkAdapters
+; Registry
+ubrBuffer       DWORD   ?                   ; Update Build Revision (UBR) registry value buffer
+; General purpose variables
+tmpbuf          BYTE    MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use
 
+        .CONST
 ; Header strings
 header_line     BYTE    "----------------------------------------", 0Dh, 0Ah
 header_proc     BYTE    0Dh, 0Ah, "Processor", 0Dh, 0Ah
@@ -201,30 +228,7 @@ header_mem      BYTE    0Dh, 0Ah, "Memory", 0Dh, 0Ah
 header_os       BYTE    0Dh, 0Ah, "Operating System", 0Dh, 0Ah
 header_disks    BYTE    0Dh, 0Ah, "Disks", 0Dh, 0Ah
 header_network  BYTE    0Dh, 0Ah, "Network", 0Dh, 0Ah
-
-; Processor strings
-cpu_vendor      BYTE    "Vendor       : "
-cpu_name        BYTE    "Model        : "
-cpu_cores       BYTE    "Threads      : "
-cpu_arch        BYTE    "Architecture : "
-cpu_x86         BYTE    "x86"
-cpu_x64         BYTE    "x86_64"
-cpu_arm         BYTE    "ARM"
-cpu_arm64       BYTE    "ARM64"
-cpu_ia64        BYTE    "Intel Itanium"
-
-; Memory strings
-mem_total       BYTE    "Total        : "
-mem_avail       BYTE    "Available    : "
-mem_load        BYTE    "Load         : "
-gibi_whole      QWORD   ?                   ; Store whole portion of RAM size
-gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size
-
-; Disk strings
-disk_total      BYTE    "Total        : "
-disk_avail      BYTE    "Available    : "
-
-; Operating system strings
+; Operating system function strings
 os_version      BYTE    "Version      : "
 os_edition      BYTE    "Edition      : "
 os_build        BYTE    "Build        : "
@@ -325,28 +329,38 @@ ed_ultimate     BYTE    "Ultimate"
 ed_ultimate_n   BYTE    "Ultimate N"
 ed_web          BYTE    "Web Server (full installation)"
 ed_web_core     BYTE    "Web Server (core installation)"
-productType     DWORD   ?                   ; Store return value from GetProductInfo function
 comp_name       BYTE    "Hostname     : "
-compNameBuf     BYTE    MaxBuf DUP (0)
-compNameSize    DWORD   MaxBuf
-
-; Uptime strings
+; Uptime function strings
 uptime          BYTE    "Uptime       : "
 comma_sp        BYTE    ", "
-days            QWORD   ?                   ; Uptime days value
 days_label      BYTE    " days"
 day_label       BYTE    " day"
-hours           QWORD   ?                   ; Uptime hours value
 hours_label     BYTE    " hours"
 hour_label      BYTE    " hour"
-minutes         QWORD   ?                   ; Uptime minutes value
 minutes_label   BYTE    " minutes"
 minute_label    BYTE    " minute"
-seconds         QWORD   ?                   ; Uptime seconds value
 seconds_label   BYTE    " seconds"
 second_label    BYTE    " second"
-
-; Formatting and utility
+; Processor function strings
+cpu_vendor      BYTE    "Vendor       : "
+cpu_name        BYTE    "Model        : "
+cpu_cores       BYTE    "Threads      : "
+cpu_arch        BYTE    "Architecture : "
+cpu_x86         BYTE    "x86"
+cpu_x64         BYTE    "x86_64"
+cpu_arm         BYTE    "ARM"
+cpu_arm64       BYTE    "ARM64"
+cpu_ia64        BYTE    "Intel Itanium"
+; Memory function strings
+mem_total       BYTE    "Total        : "
+mem_avail       BYTE    "Available    : "
+mem_load        BYTE    "Load         : "
+; Disks function strings
+disk_total      BYTE    "Total        : "
+disk_avail      BYTE    "Available    : "
+; Network function strings
+net_not_found   BYTE    "No configured network adapters found", 0Dh, 0Ah
+; Formatting and utility strings
 unknown         BYTE    "unknown"
 error_msg       BYTE    "error"
 not_avail       BYTE    "Not available"
@@ -360,19 +374,9 @@ l_paren         BYTE    "("
 r_paren         BYTE    ")"
 newln           BYTE    0Dh, 0Ah            ; CRLF
 dblsp           BYTE    0Dh, 0Ah, 0Ah       ; CRLFLF
-stdout          QWORD   ?                   ; Handle to standard output device
-nbwr            DWORD   ?                   ; Number of bytes (characters) actually written
-nbrd            DWORD   ?                   ; Number of bytes (characters) actually read
-
-; Heap
-hHeap           QWORD   ?                   ; Heap handle from GetProcessHeap
-pAdapterMemory  QWORD   ?                   ; Pointer to allocated memory block from HeapAlloc for GetNetworkAdapters
-
 ; Registry
 ubrSubKey       BYTE    "SOFTWARE\Microsoft\Windows NT\CurrentVersion", 0
 ubrValName      BYTE    "UBR", 0
-ubrBuffer       DWORD   ?
-ubrLength       DWORD   4
 
 ;----------------------------------------------------------------------------
 ; Code Segment
@@ -530,14 +534,17 @@ start   PROC                                ; Program entry procedure / start
         call    PrintNetworkAdapters
 
         mov     rcx, [hHeap]
-        mov     rdx, 0
+        xor     edx, edx
         mov     r8, [pAdapterMemory]
         call    HeapFree                    ; Free memory allocated by GetNetworkAdapters
 
+        jmp     done                        ; Start procedure done
 skip_network_print:
+        StrOut  net_not_found, LENGTHOF net_not_found
+
+done:
        ;StrOut  dblsp, LENGTHOF dblsp
         StrOut  newln, LENGTHOF newln
-
         xor     ecx, ecx
         call    ExitProcess
 start   ENDP
@@ -1881,7 +1888,7 @@ GetNetworkAdapters PROC
         jne     fail
 
         mov     rcx, [hHeap]
-        mov     rdx, 0
+        xor     edx, edx
         mov     r8, [pAdapterSize]
         call    HeapAlloc                   ; Allocate memory on heap for GetAdaptersInfo; must be freed by caller
         test    rax, rax                    ; Ensure memory was allocated successfully
