@@ -4,6 +4,8 @@
     "editor.detectIndentation": false,
     "editor.renderWhitespace": "selection",
     "cSpell.words": [
+        "addl",
+        "addlsvc",
         "advapi",
         "asmfetch",
         "cpubuf",
@@ -23,15 +25,20 @@
         "gibi",
         "GIBIBYTE",
         "hheap",
+        "hyperv",
         "IFIDNI",
         "INCLUDELIB",
         "iphlpapi",
         "KIBIBYTE",
         "LENGTHOF",
         "logicaldrives",
+        "ltsb",
+        "ltsc",
         "MEBIBYTE",
         "membuf",
         "MEMORYSTATUSEX",
+        "mgmt",
+        "mgmtsvc",
         "movzx",
         "nbrd",
         "nbwr",
@@ -44,6 +51,7 @@
         "stosb",
         "TEBIBYTE",
         "timebuf",
-        "tmpbuf"
+        "tmpbuf",
+        "vdesktop"
     ]
 }
