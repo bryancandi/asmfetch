@@ -533,9 +533,9 @@ start   PROC                                ; Program entry procedure / start
 
         call    PrintNetworkAdapters
 
-        mov     rcx, [hHeap]
-        xor     edx, edx
-        mov     r8, [pAdapterMemory]
+        mov     rcx, [hHeap]                ; Handle to current process heap
+        xor     edx, edx                    ; No flags (0)
+        mov     r8, [pAdapterMemory]        ; Pointer to the memory block to be freed
         call    HeapFree                    ; Free memory allocated by GetNetworkAdapters
 
         jmp     done                        ; Start procedure done
@@ -1887,36 +1887,42 @@ GetNetworkAdapters PROC
         cmp     eax, ERROR_BUFFER_OVERFLOW  ; Ensure we received the expected error code
         jne     fail
 
-        mov     rcx, [hHeap]
-        xor     edx, edx
-        mov     r8, [pAdapterSize]
+        mov     rcx, [hHeap]                ; Handle to current process heap
+        xor     edx, edx                    ; No flags (0)
+        mov     r8, [pAdapterSize]          ; Number of bytes to allocate
         call    HeapAlloc                   ; Allocate memory on heap for GetAdaptersInfo; must be freed by caller
         test    rax, rax                    ; Ensure memory was allocated successfully
         jz      fail
         mov     [pAdapterMemory], rax       ; Store pointer to the allocated memory block
 
-        mov     rcx, [pAdapterMemory]
-        lea     rdx, pAdapterSize
-        call    GetAdaptersInfo
+        mov     rcx, [pAdapterMemory]       ; Buffer to receive linked list of IP_ADAPTER_INFO structures
+        lea     rdx, pAdapterSize           ; Size of the buffer pointed to by pAdapterMemory
+        call    GetAdaptersInfo             ; Populate the IP_ADAPTER_INFO structures
         test    eax, eax
         jnz     fail
-        mov     eax, 1                      ; Signal success
+        mov     eax, 1                      ; Signal success (1)
         jmp     done
 
 fail:
-        xor     eax, eax
+        xor     eax, eax                    ; Signal failure (0)
 done:
         add     rsp, 40
         ret
 GetNetworkAdapters ENDP
 
-; Prints description and IP address for each adapter in the *pAdapterMemory linked list.
+; Prints description and IP address for each configured adapter in the *pAdapterMemory linked list.
 ; Adapters with no IP assigned (0.0.0.0) are skipped.
-; Note: only the first address in each adapter's IpAddressList is printed;
+; Note 1: if no adapters are configured, then all detected adapters are printed.
+; Note 2: only the first address in each adapter's IpAddressList is printed;
 ; additional addresses (IP_ADDR_STRING.Next) are not traversed.
 PrintNetworkAdapters PROC
         push    rbx
+        push    r12
+        push    r13
         sub     rsp, 32                     ; Shadow space
+
+        xor     r12d, r12d                  ; R12 = adapters without IP (skipped)
+        xor     r13d, r13d                  ; R13 = configured adapters (printed)
 
         mov     rax, [pAdapterMemory]       ; RAX = address of the IP_ADAPTER_INFO structure
         test    rax, rax                    ; Ensure pAdapterMemory is not null
@@ -1929,10 +1935,17 @@ print_loop:
 
         mov     cl, [rax]
         cmp     cl, '0'                     ; Check if IP starts with 0; if yes, skip adapter
-        je      next_adapter
+        je      skip_adapter
+        jmp     print_adapter
 
+skip_adapter:
+        inc     r12d                        ; Skipped++
+        jmp     next_adapter                ; Jump to the next adapter
+
+print_adapter:
+        inc     r13d                        ; Printed++
         mov     rax, rbx
-        lea     rax, [rax].IP_ADAPTER_INFO.Description
+        lea     rax, [rax].IP_ADAPTER_INFO.Description ; RAX = pointer to current adapter description string
         StrOut  rax, MAX_ADAPTER_DESCRIPTION_LENGTH + 4
         StrOut  newln, LENGTHOF newln
 
@@ -1943,14 +1956,46 @@ print_loop:
         StrOut  newln, LENGTHOF newln
 
 next_adapter:
-        mov     rax, [rbx].IP_ADAPTER_INFO.Next
+        mov     rax, [rbx].IP_ADAPTER_INFO.Next ; RAX = pointer to next IP_ADAPTER_INFO structure
         test    rax, rax                    ; Is there is another adapter to print?
-        jz      done
+        jz      check_printed               ; No, let's check what has been printed
         mov     rbx, rax                    ; RBX = next node
-        jmp     print_loop
+        jmp     print_loop                  ; Yes, let's print it
+
+check_printed:
+        test    r13d, r13d                  ; Did any configured adapters print?
+        jz      none_printed                ; No, check if we skipped any adapters without IP addresses
+        jmp     done                        ; Yes, we are done
+
+none_printed:
+        test    r12d, r12d                  ; No adapters were printed; were any adapters without IP skipped?
+        jz      done                        ; No, we are done
+        mov     rax, [pAdapterMemory]       ; RAX = address of the IP_ADAPTER_INFO structure
+        mov     rbx, rax                    ; RBX = first node (again, for second pass)
+        jmp     print_loop_unconfigured     ; Yes, let's print the unconfigured adapter list
+
+print_loop_unconfigured:
+        mov     rax, rbx
+        lea     rax, [rax].IP_ADAPTER_INFO.Description
+        StrOut  rax, MAX_ADAPTER_DESCRIPTION_LENGTH + 4
+        StrOut  newln, LENGTHOF newln
+
+        mov     rax, rbx
+        lea     rax, [rax].IP_ADAPTER_INFO.IpAddressList
+        lea     rax, [rax].IP_ADDR_STRING.IpAddress
+        StrOut  rax, IP_STRING_LENGTH - 1
+        StrOut  newln, LENGTHOF newln
+
+        mov     rax, [rbx].IP_ADAPTER_INFO.Next ; RAX = pointer to next IP_ADAPTER_INFO structure
+        test    rax, rax                    ; Is there is another adapter to print?
+        jz      done                        ; No
+        mov     rbx, rax                    ; RBX = next node
+        jmp     print_loop_unconfigured     ; Yes
 
 done:
         add     rsp, 32
+        pop     r13
+        pop     r12
         pop     rbx
         ret
 PrintNetworkAdapters ENDP
