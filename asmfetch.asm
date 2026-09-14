@@ -54,6 +54,7 @@ RtlGetVersion           PROTO lpVersionInformation:PTR RTL_OSVERSIONINFOEXW
 ; Win32 handles and flags
 STD_OUTPUT_HANDLE               EQU -11
 HKEY_LOCAL_MACHINE              EQU 80000002h
+RRF_RT_REG_SZ                   EQU 2h
 RRF_RT_REG_DWORD                EQU 10h
 ERROR_BUFFER_OVERFLOW           EQU 6Fh
 
@@ -186,6 +187,7 @@ compNameSize    DWORD   MaxBuf
 ; Network function initialized variables
 pAdapterSize    QWORD   0
 ; Registry
+dispVerLength   DWORD   8                   ; Only 5 is required; using 8 in case of future format change
 ubrLength       DWORD   4
 
         .DATA?
@@ -216,6 +218,7 @@ diskfreebytes   QWORD   ?                   ; Drive free bytes buffer
 ; Network function variables
 pAdapterMemory  QWORD   ?                   ; Pointer to allocated memory block from HeapAlloc for GetNetworkAdapters
 ; Registry
+dispVerBuffer   BYTE    MaxBuf DUP (?)      ; Display Version value (24H2, 25H2, etc.)
 ubrBuffer       DWORD   ?                   ; Update Build Revision (UBR) registry value buffer
 ; General purpose variables
 tmpbuf          BYTE    MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use
@@ -231,6 +234,7 @@ header_network  BYTE    0Dh, 0Ah, "Network", 0Dh, 0Ah
 ; Operating system function strings
 os_version      BYTE    "Version      : "
 os_edition      BYTE    "Edition      : "
+os_display      BYTE    "Display      : "
 os_build        BYTE    "Build        : "
 win_next        BYTE    "Windows"
 win_11          BYTE    "Windows 11"
@@ -375,7 +379,8 @@ r_paren         BYTE    ")"
 newln           BYTE    0Dh, 0Ah            ; CRLF
 dblsp           BYTE    0Dh, 0Ah, 0Ah       ; CRLFLF
 ; Registry
-ubrSubKey       BYTE    "SOFTWARE\Microsoft\Windows NT\CurrentVersion", 0
+versionSubKey   BYTE    "SOFTWARE\Microsoft\Windows NT\CurrentVersion", 0
+displayVersion  BYTE    "DisplayVersion", 0
 ubrValName      BYTE    "UBR", 0
 
 ;----------------------------------------------------------------------------
@@ -402,6 +407,11 @@ start   PROC                                ; Program entry procedure / start
 
         StrOut  os_edition, LENGTHOF os_edition
         call    GetWinEdition
+        StrOut  rax, r8d
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  os_display, LENGTHOF os_display
+        call    GetWinDisplayVersion
         StrOut  rax, r8d
         StrOut  newln, LENGTHOF newln
 
@@ -1290,6 +1300,44 @@ done:
         ret
 GetWinEdition ENDP
 
+; Return Windows DisplayVersion from registry in RAX; byte length in R8D.
+GetWinDisplayVersion PROC
+        push    rbx
+        push    rdi
+        sub     rsp, 56                     ; Shadow space + 3 stack args
+
+        lea     rdi, dispVerBuffer
+        lea     rbx, dispVerLength
+
+        mov     rcx, HKEY_LOCAL_MACHINE     ; hkey
+        lea     rdx, versionSubKey          ; lpSubKey
+        lea     r8, displayVersion          ; lpValue
+        mov     r9, RRF_RT_REG_SZ           ; dwFlags
+        mov     QWORD PTR [rsp+32], 0       ; pdwType
+        mov     QWORD PTR [rsp+40], rdi     ; pvData
+        mov     QWORD PTR [rsp+48], rbx     ; pcbData
+        call    RegGetValueA
+
+        test    eax, eax                    ; 0 = success; nz = failure (system error code)
+        jnz     fail
+
+        lea     rax, dispVerBuffer          ; Return pointer to display version string in RAX
+        mov     r8d, dispVerLength
+
+        add     rsp, 56
+        pop     rdi
+        pop     rbx
+        ret
+
+fail:
+        lea     rax, unknown
+        mov     r8d, LENGTHOF unknown
+        add     rsp, 56
+        pop     rdi
+        pop     rbx
+        ret
+GetWinDisplayVersion ENDP
+
 ; Return Windows build number in EAX.
 GetWinBuild PROC
         sub     rsp, 40                     ; Shadow space
@@ -1321,7 +1369,7 @@ GetWinUBR PROC
         lea     rbx, ubrLength
 
         mov     rcx, HKEY_LOCAL_MACHINE     ; hkey
-        lea     rdx, ubrSubKey              ; lpSubKey
+        lea     rdx, versionSubKey          ; lpSubKey
         lea     r8, ubrValName              ; lpValue
         mov     r9, RRF_RT_REG_DWORD        ; dwFlags
         mov     QWORD PTR [rsp+32], 0       ; pdwType
