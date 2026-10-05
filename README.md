@@ -9,9 +9,9 @@ Example (output may differ from the latest version):
 ```text
 Operating System
 ----------------------------------------
-Version      : Windows 11
+Name         : Windows 11
 Edition      : Pro
-Display      : 26H2
+Version      : 26H2
 Build        : 26300.9539
 Hostname     : WIN-THINKPAD
 Uptime       : 1 day, 14 hours, 27 minutes, 31 seconds
