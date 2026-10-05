@@ -232,9 +232,9 @@ header_os       BYTE    0Dh, 0Ah, "Operating System", 0Dh, 0Ah
 header_disks    BYTE    0Dh, 0Ah, "Disks", 0Dh, 0Ah
 header_network  BYTE    0Dh, 0Ah, "Network", 0Dh, 0Ah
 ; Operating system function strings
-os_version      BYTE    "Version      : "
+os_version      BYTE    "Name         : "
 os_edition      BYTE    "Edition      : "
-os_display      BYTE    "Display      : "
+os_display      BYTE    "Version      : "
 os_build        BYTE    "Build        : "
 win_next        BYTE    "Windows"
 win_11          BYTE    "Windows 11"
