@@ -92,7 +92,7 @@ header_line     BYTE    "----------------------------------------", 0Dh, 0Ah
 header_proc     BYTE    0Dh, 0Ah, "Processor", 0Dh, 0Ah
 header_mem      BYTE    0Dh, 0Ah, "Memory", 0Dh, 0Ah
 header_os       BYTE    0Dh, 0Ah, "Operating System", 0Dh, 0Ah
-header_disks    BYTE    0Dh, 0Ah, "Disks", 0Dh, 0Ah
+header_disks    BYTE    0Dh, 0Ah, "Storage", 0Dh, 0Ah
 header_network  BYTE    0Dh, 0Ah, "Network", 0Dh, 0Ah
 ; Operating system function strings
 os_version      BYTE    "Name         : "
@@ -223,8 +223,8 @@ mem_total       BYTE    "Total        : "
 mem_avail       BYTE    "Available    : "
 mem_load        BYTE    "Load         : "
 ; Disks function strings
-disk_total      BYTE    "Total        : "
-disk_avail      BYTE    "Available    : "
+disk_total      BYTE    "  Total      : "
+disk_avail      BYTE    "  Available  : "
 ; Network function strings
 net_not_found   BYTE    "No configured network adapters found", 0Dh, 0Ah
 ; Formatting and utility strings
@@ -237,6 +237,7 @@ gib_label       BYTE    " GiB"
 decimal_pt      BYTE    "."
 percent_sn      BYTE    "%"
 space           BYTE    " "
+space_dbl       BYTE    "  "
 l_paren         BYTE    "("
 r_paren         BYTE    ")"
 newln           BYTE    0Dh, 0Ah            ; CRLF
@@ -1860,6 +1861,7 @@ print_adapter:
         StrOut  rax, MAX_ADAPTER_DESCRIPTION_LENGTH + 4
         StrOut  newln, LENGTHOF newln
 
+        StrOut  space_dbl, LENGTHOF space_dbl ; Indent IP address 2 spaces
         mov     rax, rbx
         lea     rax, [rax].IP_ADAPTER_INFO.IpAddressList
         lea     rax, [rax].IP_ADDR_STRING.IpAddress
@@ -1891,6 +1893,7 @@ print_loop_unconfigured:
         StrOut  rax, MAX_ADAPTER_DESCRIPTION_LENGTH + 4
         StrOut  newln, LENGTHOF newln
 
+        StrOut  space_dbl, LENGTHOF space_dbl
         mov     rax, rbx
         lea     rax, [rax].IP_ADAPTER_INFO.IpAddressList
         lea     rax, [rax].IP_ADDR_STRING.IpAddress
